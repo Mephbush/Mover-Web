@@ -11,11 +11,13 @@
     "vercel-build": "vite build"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "jszip": "^3.10.1",
+    "lucide-react": "latest",
+    "motion": "latest",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "lucide-react": "latest",
-    "@supabase/supabase-js": "^2.39.0",
-    "motion": "latest"
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
