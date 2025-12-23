@@ -1,0 +1,319 @@
+import { motion } from 'motion/react';
+import { Bot, Zap, Shield, Globe, Code, Database, ArrowRight, Check, Star } from 'lucide-react';
+import { Button } from './ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { ImageWithFallback } from './figma/ImageWithFallback';
+
+interface LandingPageProps {
+  onGetStarted: () => void;
+}
+
+export function LandingPage({ onGetStarted }: LandingPageProps) {
+  const features = [
+    {
+      icon: Bot,
+      title: 'أتمتة ذكية',
+      description: 'روبوت متقدم يتخذ قرارات بناءً على السياق والظروف',
+      gradient: 'from-purple-500 to-pink-500',
+    },
+    {
+      icon: Shield,
+      title: 'إخفاء متقدم',
+      description: 'تقنيات stealth متطورة للتهرب من كاشفات الروبوتات',
+      gradient: 'from-blue-500 to-cyan-500',
+    },
+    {
+      icon: Zap,
+      title: 'تنفيذ سريع',
+      description: 'أداء عالي مع دعم Playwright و Puppeteer',
+      gradient: 'from-orange-500 to-red-500',
+    },
+    {
+      icon: Globe,
+      title: 'دعم شامل',
+      description: 'يعمل على جميع المواقع مع قوالب جاهزة للمنصات الشهيرة',
+      gradient: 'from-green-500 to-emerald-500',
+    },
+    {
+      icon: Code,
+      title: 'مرونة كاملة',
+      description: 'بناء مرئي أو كود متقدم، الاختيار لك',
+      gradient: 'from-indigo-500 to-purple-500',
+    },
+    {
+      icon: Database,
+      title: 'تخزين آمن',
+      description: 'قاعدة بيانات سحابية مع GitHub integration',
+      gradient: 'from-pink-500 to-rose-500',
+    },
+  ];
+
+  const capabilities = [
+    'جمع وتحليل البيانات من أي موقع',
+    'تسجيل دخول تلقائي مع حفظ الجلسات',
+    'إنشاء حسابات على المنصات المختلفة',
+    'اختبار وظائف المواقع',
+    'التقاط صور ومقاطع فيديو',
+    'تعامل ذكي مع التحقق بالبريد الإلكتروني',
+    'جدولة المهام والتنفيذ الدوري',
+    'تصدير ونشر على GitHub',
+  ];
+
+  const stats = [
+    { value: '100+', label: 'قوالب جاهزة' },
+    { value: '99.9%', label: 'معدل النجاح' },
+    { value: '24/7', label: 'عمل متواصل' },
+    { value: '∞', label: 'إمكانيات لا محدودة' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
+        
+        <div className="relative">
+          {/* Navigation */}
+          <nav className="container mx-auto px-6 py-6">
+            <div className="flex items-center justify-between">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-xl text-white">روبوت الأتمتة الذكي</span>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <Button onClick={onGetStarted} size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
+                  ابدأ الآن
+                  <ArrowRight className="mr-2 w-5 h-5" />
+                </Button>
+              </motion.div>
+            </div>
+          </nav>
+
+          {/* Hero Content */}
+          <div className="container mx-auto px-6 py-20 lg:py-32">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 mb-6">
+                  <Star className="w-4 h-4" />
+                  <span className="text-sm">أقوى منصة أتمتة في العالم العربي</span>
+                </div>
+
+                <h1 className="text-5xl lg:text-7xl text-white mb-6 leading-tight">
+                  أتمتة <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">ذكية</span> لكل مهامك على الويب
+                </h1>
+
+                <p className="text-xl text-slate-400 mb-8 leading-relaxed">
+                  نظام متكامل لأتمتة المهام البشرية عبر الإنترنت مع ذكاء اصطناعي متقدم وتقنيات stealth للتهرب من كاشفات الروبوتات
+                </p>
+
+                <div className="flex flex-wrap gap-4 mb-12">
+                  <Button onClick={onGetStarted} size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg px-8">
+                    ابدأ مجاناً
+                    <ArrowRight className="mr-2 w-5 h-5" />
+                  </Button>
+                  <Button onClick={() => {
+                    document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+                  }} size="lg" variant="outline" className="border-slate-700 text-white hover:bg-slate-800 text-lg px-8">
+                    استكشف الميزات
+                  </Button>
+                </div>
+
+                {/* Demo Accounts Info - تمت الإزالة ونقلها لصفحة تسجيل الدخول فقط */}
+
+                {/* Stats */}
+                <div className="grid grid-cols-4 gap-6">
+                  {stats.map((stat, index) => (
+                    <motion.div
+                      key={stat.label}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 + index * 0.1 }}
+                      className="text-center"
+                    >
+                      <div className="text-3xl text-white mb-1">{stat.value}</div>
+                      <div className="text-sm text-slate-500">{stat.label}</div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="relative"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 blur-3xl" />
+                <div className="relative rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+                  <ImageWithFallback
+                    src="https://images.unsplash.com/photo-1761195696590-3490ea770aa1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyb2JvdCUyMGF1dG9tYXRpb24lMjB0ZWNobm9sb2d5fGVufDF8fHx8MTc2NTcwNDg2M3ww&ixlib=rb-4.1.0&q=80&w=1080"
+                    alt="Robot Automation"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Features Section */}
+      <div id="features" className="relative py-20 lg:py-32">
+        <div className="container mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl lg:text-5xl text-white mb-4">
+              ميزات قوية لأتمتة شاملة
+            </h2>
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+              كل ما تحتاجه لأتمتة أي مهمة على الويب في منصة واحدة
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card className="bg-slate-900/50 border-slate-800 hover:border-slate-700 transition-all duration-300 h-full backdrop-blur">
+                  <CardHeader>
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4`}>
+                      <feature.icon className="w-6 h-6 text-white" />
+                    </div>
+                    <CardTitle className="text-white">{feature.title}</CardTitle>
+                    <CardDescription className="text-slate-400">
+                      {feature.description}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Capabilities Section */}
+      <div className="relative py-20 lg:py-32 bg-gradient-to-b from-slate-900 to-slate-950">
+        <div className="container mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-4xl lg:text-5xl text-white mb-6">
+                قدرات لا محدودة
+              </h2>
+              <p className="text-xl text-slate-400 mb-8">
+                من التسجيل التلقائي إلى التحليل المتقدم، روبوتنا يتعامل مع كل شيء
+              </p>
+
+              <div className="space-y-4">
+                {capabilities.map((capability, index) => (
+                  <motion.div
+                    key={capability}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.05 }}
+                    className="flex items-start gap-3"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-slate-300">{capability}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 blur-3xl" />
+              <div className="relative rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+                <ImageWithFallback
+                  src="https://images.unsplash.com/photo-1758411898021-ef0dadaaa295?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBkYXNoYm9hcmQlMjBpbnRlcmZhY2V8ZW58MXx8fHwxNzY1NzAyNjA1fDA&ixlib=rb-4.1.0&q=80&w=1080"
+                  alt="Dashboard Interface"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="relative py-20 lg:py-32">
+        <div className="container mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 blur-3xl" />
+            <Card className="relative bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20 overflow-hidden">
+              <CardContent className="p-12 text-center">
+                <h2 className="text-4xl lg:text-5xl text-white mb-6">
+                  جاهز للبدء؟
+                </h2>
+                <p className="text-xl text-slate-400 mb-8 max-w-2xl mx-auto">
+                  انضم إلى آلاف المستخدمين الذين يوفرون ساعات من العمل اليدوي يومياً
+                </p>
+                <Button onClick={onGetStarted} size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg px-12">
+                  ابدأ الآن مجاناً
+                  <ArrowRight className="mr-2 w-5 h-5" />
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-800 py-12">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <Bot className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-slate-400">روبوت الأتمتة الذكي</span>
+            </div>
+            <p className="text-slate-500 text-sm">
+              © 2025 جميع الحقوق محفوظة
+            </p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
