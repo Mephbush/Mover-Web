@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { GitHubOAuthButton } from './GitHubOAuthButton';
-import { toast } from 'sonner@2.0.3';
+import { toast } from "sonner";
 
 type ConnectionMethod = 'oauth' | 'token' | 'quick';
 

@@ -20,7 +20,7 @@ import { AIBrainCustomization } from './AIBrainCustomization';
 import { Alert, AlertDescription } from './ui/alert';
 import { AIBrain } from '../utils/ai-brain';
 import { useAuth } from '../hooks/useAuth';
-import { toast } from 'sonner@2.0.3';
+import { toast } from "sonner";
 
 export function AIBrainControl() {
   const { user } = useAuth();
