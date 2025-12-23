@@ -304,16 +304,16 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 py-12">
+      <footer className="border-t border-slate-800/50 py-8">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-8">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
                 <Bot className="w-5 h-5 text-white" />
               </div>
-              <span className="text-slate-400">روبوت الأتمتة الذكي</span>
+              <span className="text-slate-400 text-sm sm:text-base font-medium">روبوت الأتمتة الذكي</span>
             </div>
-            <p className="text-slate-500 text-sm">
+            <p className="text-slate-500 text-xs sm:text-sm">
               © 2025 جميع الحقوق محفوظة
             </p>
           </div>
