@@ -21,8 +21,8 @@ import {
   CheckCircle2,
   RefreshCw,
 } from 'lucide-react';
-import { Task } from '../App';
-import { toast } from 'sonner@2.0.3';
+import type { Task } from '../types';
+import { toast } from 'sonner';
 
 type ScheduleConfig = {
   id: string;
