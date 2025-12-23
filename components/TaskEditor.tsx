@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Task } from '../App';
+import type { Task } from '../types';
 import { Save, X, Play, FileCode, Eye, Code2, Sparkles, Layers } from 'lucide-react';
 import { VisualBuilder } from './VisualBuilder';
 import { AdvancedVisualBuilder } from './AdvancedVisualBuilder';

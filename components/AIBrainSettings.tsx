@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { databaseSync, AIBrainSettings as AISettings } from '../utils/ai-brain/database-sync';
 import { useAuth } from '../hooks/useAuth';
-import { toast } from 'sonner@2.0.3';
+import { toast } from "sonner";
 
 export function AIBrainSettings() {
   const { user } = useAuth();

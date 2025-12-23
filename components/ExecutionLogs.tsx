@@ -1,4 +1,4 @@
-import { ExecutionLog } from '../App';
+import type { ExecutionLog } from '../types';
 import { CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Download, PlayCircle, FileText } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';

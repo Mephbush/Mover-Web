@@ -211,7 +211,7 @@ export function getSuppressedErrorsCount(): number {
   return suppressedErrorsCount;
 }
 
-// تفعيل النظام فوراً عند استيراد الملف
-if (typeof window !== 'undefined') {
+// Only enable in production to avoid hiding debugging errors in development
+if (typeof window !== 'undefined' && import.meta.env.PROD) {
   enableFigmaErrorSuppression();
 }

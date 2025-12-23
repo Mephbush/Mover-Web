@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import './utils/suppress-figma-errors'; // تفعيل قمع أخطاء Figma فوراً
 import { AppProvider } from './contexts/AppContext';
 import { MainApp } from './components/MainApp';
 import { LandingPage } from './components/LandingPage';
@@ -7,38 +6,11 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Toaster } from './components/ui/sonner';
 import { ErrorNotifier } from './components/ErrorNotifier';
 import { FigmaErrorSuppressor } from './components/FigmaErrorSuppressor';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuth } from './hooks/useAuth';
 
-export type Task = {
-  id: string;
-  name: string;
-  description: string;
-  type: 'scraping' | 'login' | 'registration' | 'testing' | 'screenshot' | 'custom';
-  status: 'idle' | 'running' | 'completed' | 'failed';
-  script: string;
-  targetUrl: string;
-  schedule?: string;
-  createdAt: Date;
-  lastRun?: Date;
-  metadata?: {
-    source?: 'visual-builder' | 'advanced-builder' | 'smart-builder' | 'task-editor' | 'template';
-    stepsData?: string; // JSON string of steps for visual builders
-    [key: string]: any;
-  };
-};
-
-export type ExecutionLog = {
-  id: string;
-  taskId: string;
-  taskName: string;
-  status: 'success' | 'failed' | 'running';
-  startTime: Date;
-  endTime?: Date;
-  duration?: number;
-  logs: string[];
-  screenshot?: string;
-  data?: any;
-};
+// Import error suppression module (it will only activate in production)
+import './utils/suppress-figma-errors';
 
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
@@ -66,13 +38,15 @@ export default function App() {
   }
 
   return (
-    <AppProvider>
-      <FigmaErrorSuppressor />
-      <ProtectedRoute>
-        <MainApp />
-      </ProtectedRoute>
-      <ErrorNotifier />
-      <Toaster richColors position="top-center" />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <FigmaErrorSuppressor />
+        <ProtectedRoute>
+          <MainApp />
+        </ProtectedRoute>
+        <ErrorNotifier />
+        <Toaster richColors position="top-center" />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }

@@ -1,4 +1,4 @@
-import { Task } from '../App';
+import type { Task } from '../types';
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, MoveUp, MoveDown, Play, Save } from 'lucide-react';
 

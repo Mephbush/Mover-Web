@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { databaseSync } from '../utils/ai-brain/database-sync';
 import { useAuth } from '../hooks/useAuth';
-import { toast } from 'sonner@2.0.3';
+import { toast } from "sonner";
 
 interface AIPersonality {
   name: string;

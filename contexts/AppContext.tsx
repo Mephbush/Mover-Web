@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Task, ExecutionLog } from '../App';
+import type { Task, ExecutionLog } from '../types';
 import { verifyGitHubToken, deployTasksToGitHub, GitHubAPI } from '../utils/github';
 
 // ========== أنواع البيانات ==========

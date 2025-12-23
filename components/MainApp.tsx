@@ -20,7 +20,7 @@ import { TaskScheduler } from './TaskScheduler';
 import { StepExecutionMonitor } from './StepExecutionMonitor';
 import { Bot, Code, Library, History, Settings as SettingsIcon, Zap, Blocks, Server, Github, Shield, Loader, AlertTriangle, Target, Sparkles, LogOut, User, Brain, Activity, Clock, Eye } from 'lucide-react';
 import { Button } from './ui/button';
-import { Task } from '../App';
+import type { Task } from '../types';
 
 export function MainApp() {
   const { tasks, logs, settings, loading, addTask, updateTask } = useApp();

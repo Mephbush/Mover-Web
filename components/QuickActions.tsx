@@ -1,4 +1,4 @@
-import { Task } from '../App';
+import type { Task } from '../types';
 import { useState } from 'react';
 import { 
   Globe, 
