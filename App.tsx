@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import './utils/suppress-figma-errors'; // تفعيل قمع أخطاء Figma فوراً
 import { AppProvider } from './contexts/AppContext';
 import { MainApp } from './components/MainApp';
 import { LandingPage } from './components/LandingPage';
@@ -9,36 +8,10 @@ import { ErrorNotifier } from './components/ErrorNotifier';
 import { FigmaErrorSuppressor } from './components/FigmaErrorSuppressor';
 import { useAuth } from './hooks/useAuth';
 
-export type Task = {
-  id: string;
-  name: string;
-  description: string;
-  type: 'scraping' | 'login' | 'registration' | 'testing' | 'screenshot' | 'custom';
-  status: 'idle' | 'running' | 'completed' | 'failed';
-  script: string;
-  targetUrl: string;
-  schedule?: string;
-  createdAt: Date;
-  lastRun?: Date;
-  metadata?: {
-    source?: 'visual-builder' | 'advanced-builder' | 'smart-builder' | 'task-editor' | 'template';
-    stepsData?: string; // JSON string of steps for visual builders
-    [key: string]: any;
-  };
-};
-
-export type ExecutionLog = {
-  id: string;
-  taskId: string;
-  taskName: string;
-  status: 'success' | 'failed' | 'running';
-  startTime: Date;
-  endTime?: Date;
-  duration?: number;
-  logs: string[];
-  screenshot?: string;
-  data?: any;
-};
+// Only enable error suppression in production
+if (import.meta.env.PROD) {
+  import('./utils/suppress-figma-errors');
+}
 
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
