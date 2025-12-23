@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Toaster } from './components/ui/sonner';
 import { ErrorNotifier } from './components/ErrorNotifier';
 import { FigmaErrorSuppressor } from './components/FigmaErrorSuppressor';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuth } from './hooks/useAuth';
 
 // Only enable error suppression in production
@@ -39,13 +40,15 @@ export default function App() {
   }
 
   return (
-    <AppProvider>
-      <FigmaErrorSuppressor />
-      <ProtectedRoute>
-        <MainApp />
-      </ProtectedRoute>
-      <ErrorNotifier />
-      <Toaster richColors position="top-center" />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <FigmaErrorSuppressor />
+        <ProtectedRoute>
+          <MainApp />
+        </ProtectedRoute>
+        <ErrorNotifier />
+        <Toaster richColors position="top-center" />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
