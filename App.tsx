@@ -9,10 +9,8 @@ import { FigmaErrorSuppressor } from './components/FigmaErrorSuppressor';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuth } from './hooks/useAuth';
 
-// Only enable error suppression in production
-if (import.meta.env.PROD) {
-  import('./utils/suppress-figma-errors');
-}
+// Import error suppression module (it will only activate in production)
+import './utils/suppress-figma-errors';
 
 export default function App() {
   const [showLanding, setShowLanding] = useState(true);
