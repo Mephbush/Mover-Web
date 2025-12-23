@@ -6,26 +6,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: 'rgb(168 85 247 / <alpha-value>)',
-        'primary-foreground': 'rgb(255 255 255 / <alpha-value>)',
-        accent: 'rgb(236 72 153 / <alpha-value>)',
-        'accent-foreground': 'rgb(255 255 255 / <alpha-value>)',
-        destructive: 'rgb(239 68 68 / <alpha-value>)',
-        'destructive-foreground': 'rgb(255 255 255 / <alpha-value>)',
-        background: 'rgb(2 6 23 / <alpha-value>)',
-        foreground: 'rgb(248 250 252 / <alpha-value>)',
-        secondary: 'rgb(107 114 128 / <alpha-value>)',
-        'secondary-foreground': 'rgb(255 255 255 / <alpha-value>)',
-        muted: 'rgb(100 116 139 / <alpha-value>)',
-        'muted-foreground': 'rgb(148 163 184 / <alpha-value>)',
-        border: 'rgb(51 65 85 / <alpha-value>)',
-        input: 'rgb(30 41 59 / <alpha-value>)',
-        ring: 'rgb(168 85 247 / <alpha-value>)',
-        popover: 'rgb(30 41 59 / <alpha-value>)',
-        'popover-foreground': 'rgb(248 250 252 / <alpha-value>)',
-        sidebar: 'rgb(15 23 42 / <alpha-value>)',
-        'sidebar-foreground': 'rgb(248 250 252 / <alpha-value>)',
-        'sidebar-border': 'rgb(51 65 85 / <alpha-value>)',
         slate: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -160,7 +140,6 @@ export default {
           900: '#831843',
         },
       },
-      // Background images are now defined in styles/globals.css to avoid duplication
       spacing: {
         '0': '0',
         '1': '0.25rem',
