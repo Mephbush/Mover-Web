@@ -228,7 +228,8 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
       {/* Capabilities Section */}
       <div className="relative py-20 lg:py-32 capabilities-dark-bg">
         <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start lg:items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Side - Text Content */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -236,32 +237,33 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               transition={{ duration: 0.6 }}
               className="order-2 lg:order-1"
             >
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl text-white mb-6 font-bold leading-tight">
+              <h2 className="text-4xl lg:text-5xl text-white mb-6 font-bold">
                 قدرات لا محدودة
               </h2>
-              <p className="text-base sm:text-lg lg:text-xl text-slate-300 mb-8 leading-relaxed max-w-lg">
+              <p className="text-lg lg:text-xl text-slate-300 mb-8 leading-relaxed">
                 من التسجيل التلقائي إلى التحليل المتقدم، روبوتنا يتعامل مع كل شيء
               </p>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {capabilities.map((capability, index) => (
                   <motion.div
                     key={capability}
                     initial={{ opacity: 0, x: -20 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: index * 0.05, duration: 0.4 }}
+                    transition={{ delay: index * 0.05 }}
                     className="flex items-start gap-3"
                   >
-                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 mt-1">
-                      <Check className="w-3 h-3 text-white" />
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Check className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-slate-300 text-sm sm:text-base leading-relaxed">{capability}</span>
+                    <span className="text-slate-300 text-base leading-relaxed">{capability}</span>
                   </motion.div>
                 ))}
               </div>
             </motion.div>
 
+            {/* Right Side - Dashboard Image */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -269,12 +271,12 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               transition={{ duration: 0.6 }}
               className="relative order-1 lg:order-2"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-cyan-500/30 blur-3xl rounded-2xl" />
-              <div className="relative rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 blur-3xl rounded-3xl" />
+              <div className="relative rounded-3xl overflow-hidden border border-slate-700 shadow-2xl">
                 <ImageWithFallback
                   src="https://images.unsplash.com/photo-1758411898021-ef0dadaaa295?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBkYXNoYm9hcmQlMjBpbnRlcmZhY2V8ZW58MXx8fHwxNzY1NzAyNjA1fDA&ixlib=rb-4.1.0&q=80&w=1080"
                   alt="Dashboard Interface"
-                  className="w-full h-auto object-cover aspect-square"
+                  className="w-full h-auto object-cover"
                 />
               </div>
             </motion.div>
