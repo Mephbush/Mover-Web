@@ -23,14 +23,9 @@
   }
 
   body {
-    background-color: white;
-    color: rgb(15, 23, 42);
     transition: background-color 0.3s ease, color 0.3s ease;
-  }
-
-  body.dark {
-    background-color: rgb(2, 6, 23);
-    color: rgb(248, 250, 252);
+    margin: 0;
+    padding: 0;
   }
 
   h1 {
