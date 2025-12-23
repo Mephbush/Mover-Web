@@ -1,4 +1,4 @@
-import { Task } from '../App';
+import type { Task } from '../types';
 import { Search, Copy, Download, Star } from 'lucide-react';
 import { useState } from 'react';
 
