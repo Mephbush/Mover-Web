@@ -78,6 +78,10 @@
     @apply min-h-screen;
     background: linear-gradient(135deg, rgb(2, 6, 23) 0%, rgb(15, 23, 42) 50%, rgb(2, 6, 23) 100%);
   }
+
+  .capabilities-dark-bg {
+    background: linear-gradient(180deg, rgb(15, 23, 42) 0%, rgb(2, 6, 23) 100%);
+  }
 }
 
 /* Utility classes for custom animations */
