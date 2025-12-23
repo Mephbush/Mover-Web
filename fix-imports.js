@@ -8,21 +8,22 @@ const __dirname = dirname(__filename);
 
 function fixImportsInFile(filePath) {
   try {
-    const content = fs.readFileSync(filePath, 'utf8');
+    let content = fs.readFileSync(filePath, 'utf8');
+    let fixed = content;
     
-    // Remove version specifiers from imports like "@package@version"
-    // This regex handles patterns like: import { X } from "@package@version";
-    const fixed = content
-      // Fix pattern: from "@scope/package@version"
-      .replace(/from "(@[^/]+\/[^@"]+)@[^"]+"/g, 'from "$1"')
-      // Fix pattern: from "package@version"  
-      .replace(/from "([^@/"]+)@[^"]+"/g, 'from "$1"')
-      // Fix pattern in import statements for re-exports
-      .replace(/ from "@([^/]+)\/([^@"]+)@[^"]*"/g, ' from "@$1/$2"')
-      // Fix sonner specific imports with version specifiers
-      .replace(/from "sonner@[^"]+"/g, 'from "sonner"')
-      .replace(/from "next-themes@[^"]+"/g, 'from "next-themes"')
-      .replace(/from "class-variance-authority@[^"]+"/g, 'from "class-variance-authority"');
+    // Fix all version specifiers in imports
+    // Pattern 1: from "anything@version"
+    fixed = fixed.replace(/from\s+["']([^"']+)@[\d.]+["']/g, 'from "$1"');
+    
+    // Pattern 2: import statements with version specifiers
+    fixed = fixed.replace(/import\s+.*from\s+["']([^"']+)@[\d.]+["']/g, (match) => {
+      return match.replace(/@[\d.]+/g, '');
+    });
+    
+    // Pattern 3: specific package fixes
+    fixed = fixed.replace(/["']sonner@[\d.]+["']/g, '"sonner"');
+    fixed = fixed.replace(/["']next-themes@[\d.]+["']/g, '"next-themes"');
+    fixed = fixed.replace(/["']class-variance-authority@[\d.]+["']/g, '"class-variance-authority"');
     
     if (content !== fixed) {
       fs.writeFileSync(filePath, fixed, 'utf8');
@@ -56,7 +57,7 @@ function walkDir(dir) {
   return fixed;
 }
 
-console.log('Fixing import statements...');
+console.log('Fixing all remaining import version specifiers...');
 const componentsFixed = walkDir(path.join(__dirname, 'components'));
 const utilsFixed = walkDir(path.join(__dirname, 'utils'));
 const total = componentsFixed + utilsFixed;
