@@ -8,11 +8,12 @@
 
 @layer base {
   * {
-    @apply border-slate-200;
+    border-color: rgb(226, 232, 240);
   }
 
   *:focus-visible {
-    @apply outline-none ring-2 ring-purple-500 ring-offset-2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(168, 85, 247), 0 0 0 4px rgb(255, 255, 255);
   }
 
   html {
@@ -22,42 +23,58 @@
   }
 
   body {
-    @apply bg-white text-slate-900;
+    background-color: white;
+    color: rgb(15, 23, 42);
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   body.dark {
-    @apply bg-slate-950 text-slate-50;
+    background-color: rgb(2, 6, 23);
+    color: rgb(248, 250, 252);
   }
 
   h1 {
-    @apply text-5xl font-semibold leading-tight;
+    font-size: 3rem;
+    font-weight: 600;
+    line-height: 1.2;
   }
 
   h2 {
-    @apply text-4xl font-semibold leading-tight;
+    font-size: 2.25rem;
+    font-weight: 600;
+    line-height: 1.2;
   }
 
   h3 {
-    @apply text-2xl font-semibold leading-tight;
+    font-size: 1.875rem;
+    font-weight: 600;
+    line-height: 1.2;
   }
 
   h4 {
-    @apply text-xl font-semibold leading-tight;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.2;
   }
 
   label {
-    @apply text-base font-medium leading-tight;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.2;
   }
 
   button {
-    @apply text-base font-medium leading-tight;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.2;
   }
 
   input,
   textarea,
   select {
-    @apply text-base font-normal leading-tight;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.2;
   }
 }
 
