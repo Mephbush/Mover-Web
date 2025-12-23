@@ -15,36 +15,42 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
       title: 'أتمتة ذكية',
       description: 'روبوت متقدم يتخذ قرارات بناءً على السياق والظروف',
       gradient: 'from-purple-500 to-pink-500',
+      bgColor: 'bg-purple-500',
     },
     {
       icon: Shield,
       title: 'إخفاء متقدم',
       description: 'تقنيات stealth متطورة للتهرب من كاشفات الروبوتات',
       gradient: 'from-blue-500 to-cyan-500',
+      bgColor: 'bg-blue-500',
     },
     {
       icon: Zap,
       title: 'تنفيذ سريع',
       description: 'أداء عالي مع دعم Playwright و Puppeteer',
       gradient: 'from-orange-500 to-red-500',
+      bgColor: 'bg-orange-500',
     },
     {
       icon: Globe,
       title: 'دعم شامل',
       description: 'يعمل على جميع المواقع مع قوالب جاهزة للمنصات الشهيرة',
       gradient: 'from-green-500 to-emerald-500',
+      bgColor: 'bg-green-500',
     },
     {
       icon: Code,
       title: 'مرونة كاملة',
       description: 'بناء مرئي أو كود متقدم، الاختيار لك',
       gradient: 'from-indigo-500 to-purple-500',
+      bgColor: 'bg-purple-600',
     },
     {
       icon: Database,
       title: 'تخزين آمن',
       description: 'قاعدة بيانات سحابية مع GitHub integration',
       gradient: 'from-pink-500 to-rose-500',
+      bgColor: 'bg-pink-500',
     },
   ];
 
