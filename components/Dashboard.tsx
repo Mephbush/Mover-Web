@@ -1,5 +1,5 @@
 import { Play, Pause, Settings, Trash2, Clock, CheckCircle, XCircle, Circle, Eye, ExternalLink, Loader, Plus, Edit2, Activity, FileText, Download, Upload, Github } from 'lucide-react';
-import { Task } from '../App';
+import type { Task } from '../types';
 import { useApp } from '../contexts/AppContext';
 import { useState } from 'react';
 import { ResultsViewer } from './ResultsViewer';
