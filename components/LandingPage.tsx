@@ -294,16 +294,16 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
             transition={{ duration: 0.6 }}
             className="relative"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/30 to-pink-500/30 blur-3xl rounded-2xl" />
-            <Card className="relative bg-gradient-to-br from-purple-500/15 to-pink-500/15 border border-purple-500/30 hover:border-purple-500/50 transition-colors duration-300 overflow-hidden">
-              <CardContent className="p-8 sm:p-12 text-center">
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl text-white mb-6 font-bold leading-tight">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/30 to-pink-500/30 blur-3xl rounded-3xl" />
+            <Card className="relative bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 overflow-hidden">
+              <CardContent className="p-12 lg:p-16 text-center">
+                <h2 className="text-4xl lg:text-5xl text-white mb-6 font-bold">
                   جاهز للبدء؟
                 </h2>
-                <p className="text-base sm:text-lg lg:text-xl text-slate-300 mb-8 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-lg lg:text-xl text-slate-300 mb-8 max-w-2xl mx-auto leading-relaxed">
                   انضم إلى آلاف المستخدمين الذين يوفرون ساعات من العمل اليدوي يومياً
                 </p>
-                <Button onClick={onGetStarted} size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-8 sm:px-12">
+                <Button onClick={onGetStarted} size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-12">
                   ابدأ الآن مجاناً
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
