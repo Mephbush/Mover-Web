@@ -104,42 +104,41 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
           </nav>
 
           {/* Hero Content */}
-          <div className="container mx-auto px-6 py-20 lg:py-32">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="container mx-auto px-6 py-16 lg:py-32">
+            <div className="grid lg:grid-cols-2 gap-12 items-start lg:items-center">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
+                className="flex flex-col"
               >
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 mb-6">
-                  <Star className="w-4 h-4" />
-                  <span className="text-sm">أقوى منصة أتمتة في العالم العربي</span>
+                <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 mb-6 w-fit">
+                  <Star className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm">أقوى منصة أتمتة في العالم العربي</span>
                 </div>
 
-                <h1 className="text-5xl lg:text-7xl text-white mb-6 leading-tight">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl text-white mb-6 leading-tight font-bold">
                   أتمتة <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">ذكية</span> لكل مهامك على الويب
                 </h1>
 
-                <p className="text-xl text-slate-400 mb-8 leading-relaxed">
+                <p className="text-base sm:text-lg lg:text-xl text-slate-300 mb-8 leading-relaxed max-w-lg">
                   نظام متكامل لأتمتة المهام البشرية عبر الإنترنت مع ذكاء اصطناعي متقدم وتقنيات stealth للتهرب من كاشفات الروبوتات
                 </p>
 
-                <div className="flex flex-wrap gap-4 mb-12">
-                  <Button onClick={onGetStarted} size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg px-8">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-12">
+                  <Button onClick={onGetStarted} size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-8 w-full sm:w-auto">
                     ابدأ مجاناً
-                    <ArrowRight className="mr-2 w-5 h-5" />
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                   <Button onClick={() => {
                     document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
-                  }} size="lg" variant="outline" className="border-slate-700 text-white hover:bg-slate-800 text-lg px-8">
+                  }} size="lg" variant="outline" className="border-slate-600 text-white hover:bg-slate-800 hover:text-white font-semibold px-8 w-full sm:w-auto">
                     استكشف الميزات
                   </Button>
                 </div>
 
-                {/* Demo Accounts Info - تمت الإزالة ونقلها لصفحة تسجيل الدخول فقط */}
-
                 {/* Stats */}
-                <div className="grid grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                   {stats.map((stat, index) => (
                     <motion.div
                       key={stat.label}
@@ -148,8 +147,8 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                       transition={{ delay: 0.2 + index * 0.1 }}
                       className="text-center"
                     >
-                      <div className="text-3xl text-white mb-1">{stat.value}</div>
-                      <div className="text-sm text-slate-500">{stat.label}</div>
+                      <div className="text-2xl sm:text-3xl lg:text-3xl font-bold text-white mb-1">{stat.value}</div>
+                      <div className="text-xs sm:text-sm text-slate-500">{stat.label}</div>
                     </motion.div>
                   ))}
                 </div>
@@ -159,14 +158,14 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="relative"
+                className="relative hidden lg:block"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 blur-3xl" />
-                <div className="relative rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/30 to-pink-500/30 blur-3xl rounded-2xl" />
+                <div className="relative rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl">
                   <ImageWithFallback
                     src="https://images.unsplash.com/photo-1761195696590-3490ea770aa1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyb2JvdCUyMGF1dG9tYXRpb24lMjB0ZWNobm9sb2d5fGVufDF8fHx8MTc2NTcwNDg2M3ww&ixlib=rb-4.1.0&q=80&w=1080"
                     alt="Robot Automation"
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto object-cover aspect-square"
                   />
                 </div>
               </motion.div>
