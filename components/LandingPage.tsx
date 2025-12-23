@@ -67,7 +67,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="landing-dark-bg">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         {/* Background Effects */}
@@ -217,7 +217,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
       </div>
 
       {/* Capabilities Section */}
-      <div className="relative py-20 lg:py-32 bg-gradient-to-b from-slate-900 to-slate-950">
+      <div className="relative py-20 lg:py-32 capabilities-dark-bg">
         <div className="container mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
