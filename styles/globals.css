@@ -4,6 +4,45 @@
 
 :root {
   color-scheme: light dark;
+
+  /* Primary Colors */
+  --primary: #a855f7;
+  --primary-foreground: #ffffff;
+
+  /* Accent Colors */
+  --accent: #ec4899;
+  --accent-foreground: #ffffff;
+
+  /* Semantic Colors */
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --background: #020617;
+  --foreground: #f8fafc;
+  --secondary: #6b7280;
+  --secondary-foreground: #ffffff;
+
+  /* Muted Colors */
+  --muted: #64748b;
+  --muted-foreground: #94a3b8;
+
+  /* Border and Input Colors */
+  --border: #334155;
+  --input: #1e293b;
+  --ring: #a855f7;
+
+  /* UI Component Colors */
+  --popover: #1e293b;
+  --popover-foreground: #f8fafc;
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-border: #334155;
+
+  /* Chart Colors */
+  --chart-1: #a855f7;
+  --chart-2: #ec4899;
+  --chart-3: #3b82f6;
+  --chart-4: #10b981;
+  --chart-5: #f59e0b;
 }
 
 @layer base {
@@ -74,6 +113,7 @@
 }
 
 @layer components {
+  /* Landing Page & Capabilities Section Styles */
   .landing-dark-bg {
     @apply min-h-screen;
     background: linear-gradient(135deg, rgb(2, 6, 23) 0%, rgb(15, 23, 42) 50%, rgb(2, 6, 23) 100%);
@@ -105,6 +145,153 @@
   .capabilities-dark-bg button,
   .capabilities-dark-bg label {
     color: inherit;
+  }
+
+  /* Background Grid Pattern */
+  .bg-grid-white {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 60 60%22%3E%3Cg fill=%22none%22 stroke=%22rgba(255,255,255,0.05)%22 stroke-width=%221%22%3E%3Crect x=%220%22 y=%220%22 width=%2260%22 height=%2260%22/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 60px 60px;
+  }
+
+  /* Color Token Utilities - Primary */
+  .bg-primary {
+    background-color: var(--primary);
+  }
+
+  .text-primary {
+    color: var(--primary);
+  }
+
+  .border-primary {
+    border-color: var(--primary);
+  }
+
+  .text-primary-foreground {
+    color: var(--primary-foreground);
+  }
+
+  .bg-primary-foreground {
+    background-color: var(--primary-foreground);
+  }
+
+  /* Color Token Utilities - Accent */
+  .bg-accent {
+    background-color: var(--accent);
+  }
+
+  .text-accent {
+    color: var(--accent);
+  }
+
+  .border-accent {
+    border-color: var(--accent);
+  }
+
+  .text-accent-foreground {
+    color: var(--accent-foreground);
+  }
+
+  .bg-accent-foreground {
+    background-color: var(--accent-foreground);
+  }
+
+  /* Color Token Utilities - Destructive */
+  .bg-destructive {
+    background-color: var(--destructive);
+  }
+
+  .text-destructive {
+    color: var(--destructive);
+  }
+
+  .border-destructive {
+    border-color: var(--destructive);
+  }
+
+  .text-destructive-foreground {
+    color: var(--destructive-foreground);
+  }
+
+  /* Color Token Utilities - Background & Foreground */
+  .bg-background {
+    background-color: var(--background);
+  }
+
+  .text-foreground {
+    color: var(--foreground);
+  }
+
+  .bg-foreground {
+    background-color: var(--foreground);
+  }
+
+  /* Color Token Utilities - Secondary */
+  .bg-secondary {
+    background-color: var(--secondary);
+  }
+
+  .text-secondary {
+    color: var(--secondary);
+  }
+
+  .border-secondary {
+    border-color: var(--secondary);
+  }
+
+  .text-secondary-foreground {
+    color: var(--secondary-foreground);
+  }
+
+  /* Color Token Utilities - Muted */
+  .text-muted {
+    color: var(--muted);
+  }
+
+  .text-muted-foreground {
+    color: var(--muted-foreground);
+  }
+
+  .bg-muted {
+    background-color: var(--muted);
+  }
+
+  .bg-muted-foreground {
+    background-color: var(--muted-foreground);
+  }
+
+  /* Color Token Utilities - Border & Input */
+  .border-border {
+    border-color: var(--border);
+  }
+
+  .bg-input {
+    background-color: var(--input);
+  }
+
+  .border-input {
+    border-color: var(--input);
+  }
+
+  /* Color Token Utilities - Popover */
+  .bg-popover {
+    background-color: var(--popover);
+  }
+
+  .text-popover-foreground {
+    color: var(--popover-foreground);
+  }
+
+  /* Color Token Utilities - Sidebar */
+  .bg-sidebar {
+    background-color: var(--sidebar);
+  }
+
+  .text-sidebar-foreground {
+    color: var(--sidebar-foreground);
+  }
+
+  .bg-sidebar-border {
+    background-color: var(--sidebar-border);
   }
 }
 
@@ -166,10 +353,5 @@
 
   .animate-pulse-error {
     animation: pulse-error 2s infinite;
-  }
-
-  .bg-grid-white {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 60 60%22%3E%3Cg fill=%22none%22 stroke=%22rgba(255,255,255,0.05)%22 stroke-width=%221%22%3E%3Crect x=%220%22 y=%220%22 width=%2260%22 height=%2260%22/%3E%3C/g%3E%3C/svg%3E");
-    background-size: 60px 60px;
   }
 }
