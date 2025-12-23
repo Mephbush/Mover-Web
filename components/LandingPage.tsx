@@ -76,26 +76,28 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         
         <div className="relative">
           {/* Navigation */}
-          <nav className="container mx-auto px-6 py-6">
+          <nav className="container mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-3"
+                transition={{ duration: 0.5 }}
+                className="flex items-center gap-2"
               >
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
                   <Bot className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-xl text-white">روبوت الأتمتة الذكي</span>
+                <span className="text-lg font-semibold text-white">روبوت الأتمتة الذكي</span>
               </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
               >
-                <Button onClick={onGetStarted} size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
+                <Button onClick={onGetStarted} size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-6">
                   ابدأ الآن
-                  <ArrowRight className="mr-2 w-5 h-5" />
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </motion.div>
             </div>
