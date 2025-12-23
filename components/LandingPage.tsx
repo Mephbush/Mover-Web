@@ -191,15 +191,15 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl text-white mb-4 font-bold">
+            <h2 className="text-4xl lg:text-5xl text-white mb-4 font-bold">
               ميزات قوية لأتمتة شاملة
             </h2>
-            <p className="text-base sm:text-lg lg:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg lg:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
               كل ما تحتاجه لأتمتة أي مهمة على الويب في منصة واحدة
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
@@ -213,8 +213,8 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                     <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 flex-shrink-0`}>
                       <feature.icon className="w-6 h-6 text-white" />
                     </div>
-                    <CardTitle className="text-white text-lg font-semibold">{feature.title}</CardTitle>
-                    <CardDescription className="text-slate-400 text-sm">
+                    <CardTitle className="text-white font-semibold">{feature.title}</CardTitle>
+                    <CardDescription className="text-slate-400">
                       {feature.description}
                     </CardDescription>
                   </CardHeader>
