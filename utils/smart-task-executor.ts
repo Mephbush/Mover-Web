@@ -1,12 +1,10 @@
 /**
- * نظام تنفيذ مهام ذكي مع التعامل مع الاحتمالات المختلفة
- * - محاولة selectors متعددة
- * - معالجة الحالات الطارئة (popups, captcha, etc)
- * - تكيف ذكي مع تغيرات الموقع
- * - استراتيجيات احتياطية
+ * Smart Task Executor - Real browser automation with intelligent fallbacks
+ * نظام تنفيذ مهام ذكي مع متصفح حقيقي
  */
 
 import { SmartRetryManager, SmartErrorAnalyzer, ErrorContext } from './error-handler';
+import { StealthBrowser } from './stealth-browser';
 
 export interface SmartAction {
   type: 'navigate' | 'click' | 'type' | 'wait' | 'extract' | 'screenshot';
@@ -37,71 +35,110 @@ export interface ErrorHandling {
 }
 
 /**
- * محرك التنفيذ الذكي
+ * Smart Task Executor - Real execution engine
  */
 export class SmartTaskExecutor {
-  
+  private static browser: StealthBrowser | null = null;
+  private static retryManager = new SmartRetryManager();
+
   /**
-   * تنفيذ إجراء مع دعم fallbacks والتعامل الذكي مع الأخطاء
+   * Initialize browser instance
+   */
+  static async initializeBrowser(): Promise<void> {
+    if (!this.browser) {
+      this.browser = new StealthBrowser();
+      await this.browser.launch({
+        headless: true,
+        timeout: 30000,
+      });
+      console.log('🧠 Brain initialized: Stealth browser ready');
+    }
+  }
+
+  /**
+   * Close browser
+   */
+  static async closeBrowser(): Promise<void> {
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
+      console.log('🧠 Brain shutdown complete');
+    }
+  }
+
+  /**
+   * Execute action with intelligent fallbacks
    */
   static async executeAction(
     action: SmartAction,
     context: ErrorContext,
-    page?: any
+    pageId?: string
   ): Promise<any> {
-    console.log(`🎯 تنفيذ: ${action.type}`);
+    await this.initializeBrowser();
 
-    // فحص الشروط المسبقة
+    console.log(`🎯 Executing: ${action.type}`);
+
+    // Check preconditions
     if (action.conditions) {
-      const conditionResult = await this.checkConditions(action.conditions, page);
+      const conditionResult = await this.checkConditions(action.conditions, pageId);
       if (!conditionResult.shouldContinue) {
-        console.log(`⏭️ تخطي الإجراء بسبب شرط: ${conditionResult.reason}`);
+        console.log(`⏭️ Skipping action: ${conditionResult.reason}`);
         return null;
       }
     }
 
-    // محاولة الإجراء الأساسي
+    // Try primary action
     try {
-      const result = await this.executeActionConfig(action.type, action.primary, page);
-      console.log(`✅ نجح الإجراء الأساسي`);
+      const result = await this.executeActionConfig(
+        action.type,
+        action.primary,
+        pageId
+      );
+      console.log(`✅ Primary action succeeded`);
       return result;
     } catch (primaryError: any) {
-      console.error(`❌ فشل الإجراء الأساسي:`, primaryError.message);
+      console.error(`❌ Primary action failed:`, primaryError.message);
 
-      // تحليل الخطأ
+      // Analyze error
       const analysis = SmartErrorAnalyzer.analyze(primaryError, context);
-      console.log(`📊 تحليل الخطأ: ${analysis.type} - ${analysis.severity}`);
+      console.log(`📊 Error analysis: ${analysis.type} - ${analysis.severity}`);
 
-      // محاولة fallbacks
+      // Try fallbacks
       if (action.fallbacks && action.fallbacks.length > 0) {
-        console.log(`🔄 محاولة ${action.fallbacks.length} بديل...`);
-        
+        console.log(`🔄 Trying ${action.fallbacks.length} fallbacks...`);
+
         for (let i = 0; i < action.fallbacks.length; i++) {
           try {
-            console.log(`  محاولة البديل ${i + 1}...`);
-            const result = await this.executeActionConfig(action.type, action.fallbacks[i], page);
-            console.log(`  ✅ نجح البديل ${i + 1}`);
+            console.log(`  Fallback ${i + 1}...`);
+            const result = await this.executeActionConfig(
+              action.type,
+              action.fallbacks[i],
+              pageId
+            );
+            console.log(`  ✅ Fallback ${i + 1} succeeded`);
             return result;
           } catch (fallbackError: any) {
-            console.error(`  ❌ فشل البديل ${i + 1}:`, fallbackError.message);
+            console.error(`  ❌ Fallback ${i + 1} failed:`, fallbackError.message);
             if (i === action.fallbacks.length - 1) {
-              // آخر fallback فشل أيضاً
               throw fallbackError;
             }
           }
         }
       }
 
-      // إذا كان لدينا errorHandling
+      // Handle error handling options
       if (action.errorHandling?.ignoreErrors) {
-        console.log(`⚠️ تجاهل الخطأ حسب الإعدادات`);
+        console.log(`⚠️ Ignoring error per settings`);
         return null;
       }
 
-      // إذا كان لدينا fallbackAction
       if (action.errorHandling?.fallbackAction) {
-        console.log(`🔄 تنفيذ إجراء احتياطي...`);
-        return await this.executeAction(action.errorHandling.fallbackAction, context, page);
+        console.log(`🔄 Executing fallback action...`);
+        return await this.executeAction(
+          action.errorHandling.fallbackAction,
+          context,
+          pageId
+        );
       }
 
       throw primaryError;
@@ -109,264 +146,213 @@ export class SmartTaskExecutor {
   }
 
   /**
-   * تنفيذ configuration محدد
+   * Execute specific action configuration
    */
   private static async executeActionConfig(
     type: string,
     config: ActionConfig,
-    page?: any
+    pageId?: string
   ): Promise<any> {
-    // محاكاة التنفيذ (في التطبيق الحقيقي سيستخدم Playwright/Puppeteer)
-    
     switch (type) {
       case 'navigate':
-        return await this.smartNavigate(config, page);
-        
+        return await this.smartNavigate(config, pageId);
+
       case 'click':
-        return await this.smartClick(config, page);
-        
+        return await this.smartClick(config, pageId);
+
       case 'type':
-        return await this.smartType(config, page);
-        
+        return await this.smartType(config, pageId);
+
       case 'wait':
-        return await this.smartWait(config, page);
-        
+        return await this.smartWait(config, pageId);
+
       case 'extract':
-        return await this.smartExtract(config, page);
-        
+        return await this.smartExtract(config, pageId);
+
       case 'screenshot':
-        return await this.smartScreenshot(config, page);
-        
+        return await this.smartScreenshot(config, pageId);
+
       default:
-        throw new Error(`نوع إجراء غير معروف: ${type}`);
+        throw new Error(`Unknown action type: ${type}`);
     }
   }
 
   /**
-   * انتقال ذكي مع معالجة الاحتمالات
+   * Smart navigate with post-navigation checks
    */
-  private static async smartNavigate(config: ActionConfig, page?: any): Promise<void> {
+  private static async smartNavigate(
+    config: ActionConfig,
+    pageId?: string
+  ): Promise<void> {
     const url = config.value;
-    if (!url) throw new Error('URL مطلوب للانتقال');
+    if (!url) throw new Error('URL required for navigation');
 
-    console.log(`🌐 الانتقال إلى: ${url}`);
-    
-    // محاكاة
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // فحص ما بعد الانتقال
-    await this.handlePostNavigationChecks(page);
+    console.log(`🌐 Navigating to: ${url}`);
+
+    if (!this.browser) throw new Error('Browser not initialized');
+
+    await this.browser.navigateTo(url, pageId);
+
+    // Handle post-navigation tasks
+    await this.handlePostNavigationChecks(pageId);
   }
 
   /**
-   * نقر ذكي مع محاولة selectors متعددة
+   * Smart click with multiple selector fallbacks
    */
-  private static async smartClick(config: ActionConfig, page?: any): Promise<void> {
-    const selectors = Array.isArray(config.selector) ? config.selector : [config.selector];
-    
+  private static async smartClick(
+    config: ActionConfig,
+    pageId?: string
+  ): Promise<void> {
+    const selectors = Array.isArray(config.selector)
+      ? config.selector
+      : [config.selector];
+
+    if (!this.browser) throw new Error('Browser not initialized');
+
     for (const selector of selectors) {
       if (!selector) continue;
-      
+
       try {
-        console.log(`  🖱️ محاولة النقر على: ${selector}`);
-        
-        // محاكاة انتظار العنصر
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // محاكاة النقر
-        console.log(`  ✅ تم النقر على: ${selector}`);
-        
-        // نجح، اخرج من الحلقة
+        console.log(`  🖱️ Trying to click: ${selector}`);
+        await this.browser.humanClick(selector, pageId);
         return;
       } catch (error: any) {
-        console.log(`  ⚠️ فشل selector: ${selector}`);
-        
-        // إذا كان آخر selector، ارمي الخطأ
+        console.log(`  ⚠️ Failed selector: ${selector}`);
+
         if (selector === selectors[selectors.length - 1]) {
           throw error;
         }
-        
-        // جرب التالي
+
         continue;
       }
     }
-    
-    throw new Error('فشلت جميع محاولات النقر');
+
+    throw new Error('All click attempts failed');
   }
 
   /**
-   * كتابة ذكية مع محاكاة بشرية
+   * Smart typing with human-like behavior
    */
-  private static async smartType(config: ActionConfig, page?: any): Promise<void> {
-    const selector = Array.isArray(config.selector) ? config.selector[0] : config.selector;
+  private static async smartType(
+    config: ActionConfig,
+    pageId?: string
+  ): Promise<void> {
+    const selector = Array.isArray(config.selector)
+      ? config.selector[0]
+      : config.selector;
     const text = config.value;
-    
+
     if (!selector || !text) {
-      throw new Error('selector و text مطلوبان للكتابة');
+      throw new Error('Selector and text required for typing');
     }
 
-    console.log(`⌨️ كتابة في: ${selector}`);
-    
-    // محاكاة الكتابة البشرية (حرف بحرف)
-    for (let i = 0; i < text.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 100));
-    }
-    
-    console.log(`✅ تمت الكتابة: ${text.substring(0, 20)}...`);
+    console.log(`⌨️ Typing in: ${selector}`);
+
+    if (!this.browser) throw new Error('Browser not initialized');
+
+    await this.browser.humanType(selector, text, pageId);
+    console.log(`✅ Typed: ${text.substring(0, 20)}...`);
   }
 
   /**
-   * انتظار ذكي مع فحوصات متعددة
+   * Smart wait with multiple strategies
    */
-  private static async smartWait(config: ActionConfig, page?: any): Promise<void> {
-    const selector = Array.isArray(config.selector) ? config.selector[0] : config.selector;
+  private static async smartWait(
+    config: ActionConfig,
+    pageId?: string
+  ): Promise<void> {
+    const selector = Array.isArray(config.selector)
+      ? config.selector[0]
+      : config.selector;
     const timeout = config.timeout || 30000;
 
+    if (!this.browser) throw new Error('Browser not initialized');
+
     if (selector) {
-      console.log(`⏳ انتظار العنصر: ${selector}`);
-      // محاكاة الانتظار
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log(`✅ ظهر العنصر: ${selector}`);
+      console.log(`⏳ Waiting for element: ${selector}`);
+      await this.browser.waitForElement(selector, pageId);
+      console.log(`✅ Element appeared: ${selector}`);
     } else {
-      // انتظار زمني
-      const delay = timeout || 1000;
-      console.log(`⏳ انتظار ${delay}ms`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      console.log(`⏳ Waiting ${timeout}ms`);
+      await new Promise((resolve) => setTimeout(resolve, timeout));
     }
   }
 
   /**
-   * استخراج ذكي مع fallbacks متعددة
+   * Smart data extraction
    */
-  private static async smartExtract(config: ActionConfig, page?: any): Promise<any> {
-    const selectors = Array.isArray(config.selector) ? config.selector : [config.selector];
-    
+  private static async smartExtract(
+    config: ActionConfig,
+    pageId?: string
+  ): Promise<any> {
+    const selectors = Array.isArray(config.selector)
+      ? config.selector
+      : [config.selector];
+
+    if (!this.browser) throw new Error('Browser not initialized');
+
     for (const selector of selectors) {
       if (!selector) continue;
-      
+
       try {
-        console.log(`  📤 محاولة استخراج من: ${selector}`);
-        
-        // محاكاة الاستخراج
-        const mockData = {
-          text: 'Sample extracted data',
-          selector: selector,
-          timestamp: new Date().toISOString()
-        };
-        
-        console.log(`  ✅ تم الاستخراج من: ${selector}`);
-        return mockData;
-      } catch (error) {
-        console.log(`  ⚠️ فشل استخراج من: ${selector}`);
-        
+        console.log(`  📤 Extracting from: ${selector}`);
+        const data = await this.browser.extractData(selector, pageId);
+        console.log(`  ✅ Extracted ${data.length} items from: ${selector}`);
+        return data;
+      } catch (error: any) {
+        console.log(`  ⚠️ Failed to extract from: ${selector}`);
+
         if (selector === selectors[selectors.length - 1]) {
           throw error;
         }
-        
+
         continue;
       }
     }
-    
-    throw new Error('فشلت جميع محاولات الاستخراج');
+
+    throw new Error('All extraction attempts failed');
   }
 
   /**
-   * لقطة شاشة ذكية
+   * Take screenshot
    */
-  private static async smartScreenshot(config: ActionConfig, page?: any): Promise<string> {
-    console.log(`📸 التقاط لقطة شاشة`);
-    
-    // محاكاة
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const mockScreenshot = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUg...`;
-    console.log(`✅ تم التقاط لقطة الشاشة`);
-    
-    return mockScreenshot;
+  private static async smartScreenshot(
+    config: ActionConfig,
+    pageId?: string
+  ): Promise<Buffer> {
+    console.log(`📸 Taking screenshot`);
+
+    if (!this.browser) throw new Error('Browser not initialized');
+
+    const screenshot = await this.browser.takeScreenshot(pageId);
+    console.log(`✅ Screenshot taken`);
+
+    return screenshot;
   }
 
   /**
-   * فحص الشروط
+   * Handle post-navigation checks
    */
-  private static async checkConditions(
-    conditions: Condition[],
-    page?: any
-  ): Promise<{ shouldContinue: boolean; reason?: string }> {
-    for (const condition of conditions) {
-      const result = await this.evaluateCondition(condition, page);
-      
-      if (!result.passed) {
-        switch (condition.action) {
-          case 'skip':
-            return { shouldContinue: false, reason: `شرط فشل: ${condition.type}` };
-          case 'fail':
-            throw new Error(`فشل شرط إلزامي: ${condition.type}`);
-          case 'retry':
-            // سيتم التعامل معه في مستوى أعلى
-            break;
-          case 'continue':
-          default:
-            // استمر
-            break;
-        }
-      }
-    }
-    
-    return { shouldContinue: true };
+  private static async handlePostNavigationChecks(pageId?: string): Promise<void> {
+    if (!this.browser) return;
+
+    // Handle popups
+    await this.handlePopups(pageId);
+
+    // Handle cookies
+    await this.handleCookieBanners(pageId);
+
+    // Handle age verification
+    await this.handleAgeVerification(pageId);
   }
 
   /**
-   * تقييم شرط واحد
+   * Handle popup dialogs
    */
-  private static async evaluateCondition(
-    condition: Condition,
-    page?: any
-  ): Promise<{ passed: boolean }> {
-    // محاكاة تقييم الشروط
-    
-    switch (condition.type) {
-      case 'element_exists':
-        // محاكاة فحص وجود عنصر
-        return { passed: Math.random() > 0.2 };
-        
-      case 'element_visible':
-        // محاكاة فحص رؤية عنصر
-        return { passed: Math.random() > 0.3 };
-        
-      case 'url_contains':
-        // محاكاة فحص URL
-        return { passed: true };
-        
-      case 'text_contains':
-        // محاكاة فحص نص
-        return { passed: Math.random() > 0.1 };
-        
-      default:
-        return { passed: true };
-    }
-  }
+  private static async handlePopups(pageId?: string): Promise<void> {
+    if (!this.browser) return;
 
-  /**
-   * فحوصات ما بعد الانتقال
-   */
-  private static async handlePostNavigationChecks(page?: any): Promise<void> {
-    // فحص وجود popups
-    await this.handlePopups(page);
-    
-    // فحص وجود captcha
-    await this.handleCaptcha(page);
-    
-    // فحص وجود cookie banners
-    await this.handleCookieBanners(page);
-    
-    // فحص وجود age verification
-    await this.handleAgeVerification(page);
-  }
-
-  /**
-   * معالجة النوافذ المنبثقة
-   */
-  private static async handlePopups(page?: any): Promise<void> {
     const commonPopupSelectors = [
       'button[aria-label="Close"]',
       'button.close',
@@ -375,52 +361,29 @@ export class SmartTaskExecutor {
       '.popup-close',
       'button:has-text("×")',
       'button:has-text("Close")',
-      'button:has-text("إغلاق")'
+      'button:has-text("إغلاق")',
     ];
 
     for (const selector of commonPopupSelectors) {
       try {
-        // محاكاة محاولة إغلاق popup
-        const exists = Math.random() > 0.8;
-        if (exists) {
-          console.log(`  🚫 إغلاق popup: ${selector}`);
-          await new Promise(resolve => setTimeout(resolve, 200));
+        const content = await this.browser.getContent(pageId);
+        if (content.includes(selector)) {
+          console.log(`  🚫 Closing popup: ${selector}`);
+          await this.browser.humanClick(selector, pageId);
           return;
         }
       } catch (error) {
-        // تجاهل - لا يوجد popup
+        // No popup found, continue
       }
     }
   }
 
   /**
-   * معالجة Captcha
+   * Handle cookie banners
    */
-  private static async handleCaptcha(page?: any): Promise<void> {
-    const captchaSelectors = [
-      '#recaptcha',
-      '.g-recaptcha',
-      '.h-captcha',
-      'iframe[src*="captcha"]'
-    ];
+  private static async handleCookieBanners(pageId?: string): Promise<void> {
+    if (!this.browser) return;
 
-    for (const selector of captchaSelectors) {
-      try {
-        const exists = Math.random() > 0.95; // نادر
-        if (exists) {
-          console.log(`  🤖 تم اكتشاف captcha!`);
-          throw new Error('Captcha detected - يتطلب تدخل بشري');
-        }
-      } catch (error) {
-        // تجاهل
-      }
-    }
-  }
-
-  /**
-   * معالجة إشعارات ملفات تعريف الارتباط
-   */
-  private static async handleCookieBanners(page?: any): Promise<void> {
     const cookieSelectors = [
       'button:has-text("Accept")',
       'button:has-text("قبول")',
@@ -428,145 +391,182 @@ export class SmartTaskExecutor {
       'button:has-text("موافق")',
       '#cookie-accept',
       '.cookie-accept',
-      '[data-cookie-accept]'
+      '[data-cookie-accept]',
     ];
 
     for (const selector of cookieSelectors) {
       try {
-        const exists = Math.random() > 0.7;
-        if (exists) {
-          console.log(`  🍪 قبول cookies: ${selector}`);
-          await new Promise(resolve => setTimeout(resolve, 200));
+        const content = await this.browser.getContent(pageId);
+        if (content.includes(selector)) {
+          console.log(`  🍪 Accepting cookies: ${selector}`);
+          await this.browser.humanClick(selector, pageId);
           return;
         }
       } catch (error) {
-        // تجاهل
+        // No cookie banner found, continue
       }
     }
   }
 
   /**
-   * معالجة التحقق من العمر
+   * Handle age verification
    */
-  private static async handleAgeVerification(page?: any): Promise<void> {
+  private static async handleAgeVerification(pageId?: string): Promise<void> {
+    if (!this.browser) return;
+
     const ageSelectors = [
       'button:has-text("I am 18+")',
       'button:has-text("أنا أكبر من 18")',
       'button:has-text("Enter")',
       '.age-verification button',
-      '#age-confirm'
+      '#age-confirm',
     ];
 
     for (const selector of ageSelectors) {
       try {
-        const exists = Math.random() > 0.95;
-        if (exists) {
-          console.log(`  🔞 تأكيد العمر: ${selector}`);
-          await new Promise(resolve => setTimeout(resolve, 200));
+        const content = await this.browser.getContent(pageId);
+        if (content.includes(selector)) {
+          console.log(`  🔞 Confirming age: ${selector}`);
+          await this.browser.humanClick(selector, pageId);
           return;
         }
       } catch (error) {
-        // تجاهل
+        // No age verification found, continue
       }
+    }
+  }
+
+  /**
+   * Check conditions
+   */
+  private static async checkConditions(
+    conditions: Condition[],
+    pageId?: string
+  ): Promise<{ shouldContinue: boolean; reason?: string }> {
+    for (const condition of conditions) {
+      const result = await this.evaluateCondition(condition, pageId);
+
+      if (!result.passed) {
+        switch (condition.action) {
+          case 'skip':
+            return { shouldContinue: false, reason: `Condition failed: ${condition.type}` };
+          case 'fail':
+            throw new Error(`Mandatory condition failed: ${condition.type}`);
+          case 'retry':
+          case 'continue':
+          default:
+            continue;
+        }
+      }
+    }
+
+    return { shouldContinue: true };
+  }
+
+  /**
+   * Evaluate single condition
+   */
+  private static async evaluateCondition(
+    condition: Condition,
+    pageId?: string
+  ): Promise<{ passed: boolean }> {
+    if (!this.browser) return { passed: false };
+
+    try {
+      const content = await this.browser.getContent(pageId);
+
+      switch (condition.type) {
+        case 'element_exists':
+          return { passed: content.includes(condition.target) };
+
+        case 'element_visible':
+          try {
+            await this.browser.waitForElement(condition.target, pageId);
+            return { passed: true };
+          } catch {
+            return { passed: false };
+          }
+
+        case 'url_contains':
+          // Would need page URL
+          return { passed: true };
+
+        case 'text_contains':
+          return { passed: content.includes(condition.target) };
+
+        default:
+          return { passed: true };
+      }
+    } catch (error) {
+      return { passed: false };
     }
   }
 }
 
 /**
- * مكتبة قوالب المهام الذكية
+ * Smart Task Templates - Pre-built task configurations
  */
 export class SmartTaskTemplates {
-  
   /**
-   * قالب تسجيل دخول ذكي
+   * Login template
    */
   static login(url: string, username: string, password: string): SmartAction[] {
     return [
       {
         type: 'navigate',
         primary: { value: url },
-        errorHandling: {
-          retryCount: 3
-        }
+        errorHandling: { retryCount: 3 },
       },
       {
         type: 'type',
         primary: {
-          selector: ['#username', '#email', 'input[type="email"]', 'input[name="username"]', 'input[name="email"]']
+          selector: ['#username', '#email', 'input[type="email"]'],
         },
         fallbacks: [
           { selector: 'input[type="text"]' },
           { selector: 'input[placeholder*="username" i]' },
-          { selector: 'input[placeholder*="email" i]' }
         ],
-        errorHandling: {
-          retryCount: 2
-        }
       },
       {
         type: 'type',
         primary: {
-          selector: ['#password', 'input[type="password"]', 'input[name="password"]']
+          selector: ['#password', 'input[type="password"]'],
         },
-        fallbacks: [
-          { selector: 'input[placeholder*="password" i]' },
-          { selector: 'input[placeholder*="كلمة المرور" i]' }
-        ],
-        errorHandling: {
-          retryCount: 2
-        }
+        fallbacks: [{ selector: 'input[placeholder*="password" i]' }],
       },
       {
         type: 'click',
         primary: {
-          selector: ['button[type="submit"]', 'button:has-text("Login")', 'button:has-text("Sign In")']
+          selector: ['button[type="submit"]', 'button:has-text("Login")'],
         },
-        fallbacks: [
-          { selector: 'button:has-text("دخول")' },
-          { selector: 'input[type="submit"]' },
-          { selector: '.login-button' }
-        ],
-        conditions: [
-          {
-            type: 'element_visible',
-            target: 'button[type="submit"]',
-            action: 'retry'
-          }
-        ]
+        fallbacks: [{ selector: 'input[type="submit"]' }],
       },
       {
         type: 'wait',
-        primary: {
-          timeout: 3000
-        }
-      }
+        primary: { timeout: 3000 },
+      },
     ];
   }
 
   /**
-   * قالب جمع بيانات ذكي
+   * Scraping template
    */
-  static scraping(url: string, selectors: { [key: string]: string | string[] }): SmartAction[] {
+  static scraping(
+    url: string,
+    selectors: { [key: string]: string | string[] }
+  ): SmartAction[] {
     const actions: SmartAction[] = [
       {
         type: 'navigate',
-        primary: { value: url }
-      }
+        primary: { value: url },
+      },
     ];
 
-    // إضافة استخراج لكل selector
     Object.entries(selectors).forEach(([key, selector]) => {
       actions.push({
         type: 'extract',
-        primary: {
-          selector: selector
-        },
-        fallbacks: Array.isArray(selector) 
-          ? selector.slice(1).map(s => ({ selector: s }))
-          : [],
-        errorHandling: {
-          ignoreErrors: true // لا نريد فشل كامل المهمة إذا فشل عنصر واحد
-        }
+        primary: { selector },
+        errorHandling: { ignoreErrors: true },
       });
     });
 
@@ -574,37 +574,32 @@ export class SmartTaskTemplates {
   }
 
   /**
-   * قالب اختبار صفحة ذكي
+   * Testing template
    */
-  static testing(url: string, checks: Array<{ type: string; target: string }>): SmartAction[] {
+  static testing(
+    url: string,
+    checks: Array<{ type: string; target: string }>
+  ): SmartAction[] {
     const actions: SmartAction[] = [
       {
         type: 'navigate',
-        primary: { value: url }
-      }
+        primary: { value: url },
+      },
     ];
 
-    // إضافة فحص لكل check
-    checks.forEach(check => {
+    checks.forEach((check) => {
       actions.push({
         type: 'wait',
         primary: {
           selector: check.target,
-          timeout: 10000
+          timeout: 10000,
         },
-        conditions: [
-          {
-            type: check.type as any,
-            target: check.target,
-            action: 'fail'
-          }
-        ]
       });
     });
 
     actions.push({
       type: 'screenshot',
-      primary: {}
+      primary: {},
     });
 
     return actions;
