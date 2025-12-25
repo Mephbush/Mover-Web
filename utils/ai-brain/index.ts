@@ -1,14 +1,19 @@
 /**
  * نظام عقل الذكاء الاصطناعي الشامل
  * Comprehensive AI Brain System
+ *
+ * WARNING: This module contains both browser-safe and Node.js-only components.
+ * Do not import Node.js-specific modules in browser code.
  */
 
+// Browser-safe exports only
 export * from './learning-engine';
 export * from './strategic-planner';
 export * from './adaptive-intelligence';
 export * from './knowledge-base';
-export * from './master-ai';
 export * from './code-intelligence';
+
+// Database sync is browser-safe (uses Supabase client SDK)
 export * from './database-sync';
 
 import { masterAI } from './master-ai';
