@@ -5,8 +5,33 @@
  * NOTE: This is a Node.js-only module. It cannot be imported in browser code.
  */
 
-// @ts-ignore - Playwright is Node.js only
-import { chromium, Browser, BrowserContext, Page } from 'playwright';
+// Check if running in Node.js environment
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  throw new Error(
+    'stealth-browser.ts cannot be imported in browser code. ' +
+    'This is a Node.js-only module for server-side automation.'
+  );
+}
+
+// @ts-ignore - Playwright is Node.js only, type definitions for build-time only
+let chromium: any;
+let Browser: any;
+let BrowserContext: any;
+let Page: any;
+
+try {
+  // Only load in Node.js environments
+  if (typeof window === 'undefined') {
+    const playwright = require('playwright');
+    chromium = playwright.chromium;
+    Browser = playwright.Browser;
+    BrowserContext = playwright.BrowserContext;
+    Page = playwright.Page;
+  }
+} catch (error: any) {
+  // Fallback if module not available
+  console.warn('Playwright not available:', error.message);
+}
 
 export interface StealthConfig {
   headless?: boolean;
