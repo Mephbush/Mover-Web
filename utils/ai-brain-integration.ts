@@ -417,6 +417,45 @@ export class AIBrainIntegration implements AutomationPipeline {
       };
     }
   }
+
+  /**
+   * Get performance metrics
+   */
+  getPerformanceMetrics() {
+    if (!this.performanceInitialized) {
+      return null;
+    }
+    return performanceTracker.getMetrics();
+  }
+
+  /**
+   * Get performance report
+   */
+  getPerformanceReport() {
+    return performanceTracker.generatePerformanceReport();
+  }
+
+  /**
+   * Get performance trends
+   */
+  getPerformanceTrends(limit: number = 100) {
+    return performanceTracker.getTrends(limit);
+  }
+
+  /**
+   * Reset performance metrics
+   */
+  resetPerformanceMetrics() {
+    performanceTracker.resetMetrics();
+    console.log('✅ Performance metrics reset');
+  }
+
+  /**
+   * Get summary statistics
+   */
+  getSummaryStats() {
+    return performanceTracker.getSummaryStats();
+  }
 }
 
 /**
