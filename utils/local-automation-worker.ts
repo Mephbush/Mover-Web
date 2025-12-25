@@ -289,10 +289,14 @@ export class LocalAutomationWorker {
       throw new Error('Selectors required for scraping');
     }
 
+    if (!this.SmartTaskExecutor) {
+      throw new Error('SmartTaskExecutor not initialized');
+    }
+
     console.log(`📊 Scraping: ${url}`);
 
     // Navigate to URL
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'navigate',
         primary: { value: url, timeout },
@@ -302,7 +306,7 @@ export class LocalAutomationWorker {
     );
 
     // Scroll to load content
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'wait',
         primary: { timeout: 2000 },
@@ -316,7 +320,7 @@ export class LocalAutomationWorker {
 
     for (const [key, selector] of Object.entries(selectors)) {
       try {
-        const data = await SmartTaskExecutor.executeAction(
+        const data = await this.SmartTaskExecutor.executeAction(
           {
             type: 'extract',
             primary: { selector: selector as string | string[] },
