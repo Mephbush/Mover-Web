@@ -3,6 +3,8 @@
  * Learning Engine - Learns from past experiences and improves performance
  */
 
+import { databaseSync } from './database-sync';
+
 export interface Experience {
   id: string;
   taskType: string;
