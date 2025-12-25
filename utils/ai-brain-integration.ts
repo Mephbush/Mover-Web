@@ -8,6 +8,7 @@ import { getLocalWorker, LocalTaskConfig } from './local-automation-worker';
 import { SmartTaskExecutor } from './smart-task-executor';
 import { learningEngine } from './ai-brain/learning-engine';
 import { databaseSync } from './ai-brain/database-sync';
+import { performanceTracker } from './ai-brain/performance-tracker';
 
 export interface AutomationPipeline {
   initialize: (userId: string) => Promise<void>;
