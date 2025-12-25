@@ -30,6 +30,7 @@ export class AIBrainIntegration implements AutomationPipeline {
   private initialized = false;
   private startTime = Date.now();
   private performanceInitialized = false;
+  private SmartTaskExecutor: any = null;
 
   /**
    * Initialize the complete AI brain system
@@ -69,10 +70,16 @@ export class AIBrainIntegration implements AutomationPipeline {
       console.log('✅ Local worker ready');
       console.log();
 
-      // Step 5: Verify browser automation
+      // Step 5: Dynamically import and verify browser automation
       console.log('🌐 Step 5: Verifying stealth browser...');
-      await SmartTaskExecutor.initializeBrowser();
-      console.log('✅ Stealth browser initialized');
+      try {
+        const module = await import('./smart-task-executor');
+        this.SmartTaskExecutor = module.SmartTaskExecutor;
+        await this.SmartTaskExecutor.initializeBrowser();
+        console.log('✅ Stealth browser initialized');
+      } catch (error: any) {
+        console.warn('⚠️ Stealth browser initialization skipped (Node.js environment required):', error.message);
+      }
       console.log();
 
       // Step 6: Initialize performance tracking
