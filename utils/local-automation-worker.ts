@@ -47,6 +47,7 @@ export class LocalAutomationWorker {
   private isRunning = false;
   private taskQueue: LocalTaskConfig[] = [];
   private activeTask: LocalTaskConfig | null = null;
+  private SmartTaskExecutor: any = null;
 
   /**
    * Initialize the local worker
@@ -57,9 +58,19 @@ export class LocalAutomationWorker {
     this.userId = userId;
 
     try {
+      // Dynamically import SmartTaskExecutor (Node.js only)
+      try {
+        const module = await import('./smart-task-executor');
+        this.SmartTaskExecutor = module.SmartTaskExecutor;
+      } catch (error: any) {
+        throw new Error(
+          'SmartTaskExecutor requires a Node.js environment. LocalAutomationWorker cannot run in browser.'
+        );
+      }
+
       // Initialize all systems
       const masterAI = await getMasterAI(userId);
-      await SmartTaskExecutor.initializeBrowser();
+      await this.SmartTaskExecutor.initializeBrowser();
 
       console.log('✅ Local Automation Worker initialized');
     } catch (error: any) {
