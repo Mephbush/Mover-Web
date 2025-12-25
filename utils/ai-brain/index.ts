@@ -173,7 +173,6 @@ export const AIBrain = {
           synced: true,
           autoSync: settings.learning_enabled && settings.auto_learn,
         },
-        performance: performance.overall,
       },
       settings,
       timestamp: new Date(),
