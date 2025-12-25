@@ -179,10 +179,14 @@ export class LocalAutomationWorker {
       throw new Error('Username and password required for login');
     }
 
+    if (!this.SmartTaskExecutor) {
+      throw new Error('SmartTaskExecutor not initialized');
+    }
+
     console.log(`🔐 Logging in to: ${url}`);
 
     // Navigate to URL
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'navigate',
         primary: { value: url, timeout },
@@ -201,7 +205,7 @@ export class LocalAutomationWorker {
       'input[placeholder*="email" i]',
     ];
 
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'type',
         primary: { selector: emailSelectors },
@@ -223,7 +227,7 @@ export class LocalAutomationWorker {
       'input[placeholder*="password" i]',
     ];
 
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'type',
         primary: { selector: passwordSelectors },
@@ -232,6 +236,10 @@ export class LocalAutomationWorker {
       { taskType: 'login', website: url, timestamp: new Date(), retryCount: 0 },
       config.id
     );
+
+    // Type email/username
+    // (Note: The above type action would actually type the credential)
+    // For security, we'll assume it's already done via the above action
 
     // Click submit button
     const submitSelectors = [
@@ -243,7 +251,7 @@ export class LocalAutomationWorker {
       'input[type="submit"]',
     ];
 
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'click',
         primary: { selector: submitSelectors },
@@ -254,7 +262,7 @@ export class LocalAutomationWorker {
     );
 
     // Wait for redirect or confirmation
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'wait',
         primary: { timeout: timeout || 5000 },
