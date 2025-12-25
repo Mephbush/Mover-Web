@@ -1,14 +1,18 @@
 /**
  * AI Brain Integration - Complete pipeline for robot automation
  * تكامل عقل الذكاء الاصطناعي - خط أنابيب كامل لأتمتة الروبوت
+ *
+ * WARNING: This module contains Node.js-only components and should not be imported in browser code.
  */
 
 import { getMasterAI } from './ai-brain/master-ai';
 import { getLocalWorker, LocalTaskConfig } from './local-automation-worker';
-import { SmartTaskExecutor } from './smart-task-executor';
 import { learningEngine } from './ai-brain/learning-engine';
 import { databaseSync } from './ai-brain/database-sync';
 import { performanceTracker } from './ai-brain/performance-tracker';
+
+// Type definition for SmartTaskExecutor (actual import is dynamic)
+type SmartTaskExecutor = any;
 
 export interface AutomationPipeline {
   initialize: (userId: string) => Promise<void>;
@@ -26,6 +30,7 @@ export class AIBrainIntegration implements AutomationPipeline {
   private initialized = false;
   private startTime = Date.now();
   private performanceInitialized = false;
+  private SmartTaskExecutor: any = null;
 
   /**
    * Initialize the complete AI brain system
@@ -65,10 +70,16 @@ export class AIBrainIntegration implements AutomationPipeline {
       console.log('✅ Local worker ready');
       console.log();
 
-      // Step 5: Verify browser automation
+      // Step 5: Dynamically import and verify browser automation
       console.log('🌐 Step 5: Verifying stealth browser...');
-      await SmartTaskExecutor.initializeBrowser();
-      console.log('✅ Stealth browser initialized');
+      try {
+        const module = await import('./smart-task-executor');
+        this.SmartTaskExecutor = module.SmartTaskExecutor;
+        await this.SmartTaskExecutor.initializeBrowser();
+        console.log('✅ Stealth browser initialized');
+      } catch (error: any) {
+        console.warn('⚠️ Stealth browser initialization skipped (Node.js environment required):', error.message);
+      }
       console.log();
 
       // Step 6: Initialize performance tracking
@@ -179,10 +190,14 @@ export class AIBrainIntegration implements AutomationPipeline {
       throw new Error('AI Brain not initialized');
     }
 
+    if (!this.SmartTaskExecutor) {
+      throw new Error('SmartTaskExecutor not initialized');
+    }
+
     console.log('🎯 Executing smart action with AI decision-making');
 
     try {
-      const result = await SmartTaskExecutor.executeAction(
+      const result = await this.SmartTaskExecutor.executeAction(
         action,
         context
       );
@@ -341,8 +356,12 @@ export class AIBrainIntegration implements AutomationPipeline {
 
       // Step 2: Shutdown browser
       console.log('🌐 Step 2: Closing browser...');
-      await SmartTaskExecutor.closeBrowser();
-      console.log('✅ Browser closed');
+      if (this.SmartTaskExecutor) {
+        await this.SmartTaskExecutor.closeBrowser();
+        console.log('✅ Browser closed');
+      } else {
+        console.log('⚠️ Browser not initialized');
+      }
       console.log();
 
       // Step 3: Final sync

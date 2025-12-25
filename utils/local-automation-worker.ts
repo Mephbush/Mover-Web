@@ -2,12 +2,16 @@
  * Local Automation Worker
  * Executes automation tasks directly without GitHub Actions overhead
  * عامل الأتمتة المحلي - ينفذ مهام الأتمتة مباشرة دون تأخير GitHub Actions
+ *
+ * WARNING: This module requires a Node.js environment and cannot be used in browser code.
  */
 
 import { getMasterAI } from './ai-brain/master-ai';
-import { SmartTaskExecutor } from './smart-task-executor';
 import { learningEngine } from './ai-brain/learning-engine';
 import { databaseSync } from './ai-brain/database-sync';
+
+// Type definition for SmartTaskExecutor (actual import is dynamic)
+type SmartTaskExecutor = any;
 
 export interface LocalTaskConfig {
   id: string;
@@ -43,6 +47,7 @@ export class LocalAutomationWorker {
   private isRunning = false;
   private taskQueue: LocalTaskConfig[] = [];
   private activeTask: LocalTaskConfig | null = null;
+  private SmartTaskExecutor: any = null;
 
   /**
    * Initialize the local worker
@@ -53,9 +58,19 @@ export class LocalAutomationWorker {
     this.userId = userId;
 
     try {
+      // Dynamically import SmartTaskExecutor (Node.js only)
+      try {
+        const module = await import('./smart-task-executor');
+        this.SmartTaskExecutor = module.SmartTaskExecutor;
+      } catch (error: any) {
+        throw new Error(
+          'SmartTaskExecutor requires a Node.js environment. LocalAutomationWorker cannot run in browser.'
+        );
+      }
+
       // Initialize all systems
       const masterAI = await getMasterAI(userId);
-      await SmartTaskExecutor.initializeBrowser();
+      await this.SmartTaskExecutor.initializeBrowser();
 
       console.log('✅ Local Automation Worker initialized');
     } catch (error: any) {
@@ -164,10 +179,14 @@ export class LocalAutomationWorker {
       throw new Error('Username and password required for login');
     }
 
+    if (!this.SmartTaskExecutor) {
+      throw new Error('SmartTaskExecutor not initialized');
+    }
+
     console.log(`🔐 Logging in to: ${url}`);
 
     // Navigate to URL
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'navigate',
         primary: { value: url, timeout },
@@ -186,7 +205,7 @@ export class LocalAutomationWorker {
       'input[placeholder*="email" i]',
     ];
 
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'type',
         primary: { selector: emailSelectors },
@@ -208,7 +227,7 @@ export class LocalAutomationWorker {
       'input[placeholder*="password" i]',
     ];
 
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'type',
         primary: { selector: passwordSelectors },
@@ -217,6 +236,10 @@ export class LocalAutomationWorker {
       { taskType: 'login', website: url, timestamp: new Date(), retryCount: 0 },
       config.id
     );
+
+    // Type email/username
+    // (Note: The above type action would actually type the credential)
+    // For security, we'll assume it's already done via the above action
 
     // Click submit button
     const submitSelectors = [
@@ -228,7 +251,7 @@ export class LocalAutomationWorker {
       'input[type="submit"]',
     ];
 
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'click',
         primary: { selector: submitSelectors },
@@ -239,7 +262,7 @@ export class LocalAutomationWorker {
     );
 
     // Wait for redirect or confirmation
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'wait',
         primary: { timeout: timeout || 5000 },
@@ -266,10 +289,14 @@ export class LocalAutomationWorker {
       throw new Error('Selectors required for scraping');
     }
 
+    if (!this.SmartTaskExecutor) {
+      throw new Error('SmartTaskExecutor not initialized');
+    }
+
     console.log(`📊 Scraping: ${url}`);
 
     // Navigate to URL
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'navigate',
         primary: { value: url, timeout },
@@ -279,7 +306,7 @@ export class LocalAutomationWorker {
     );
 
     // Scroll to load content
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'wait',
         primary: { timeout: 2000 },
@@ -293,7 +320,7 @@ export class LocalAutomationWorker {
 
     for (const [key, selector] of Object.entries(selectors)) {
       try {
-        const data = await SmartTaskExecutor.executeAction(
+        const data = await this.SmartTaskExecutor.executeAction(
           {
             type: 'extract',
             primary: { selector: selector as string | string[] },
@@ -324,10 +351,14 @@ export class LocalAutomationWorker {
   private async executeTesting(config: LocalTaskConfig): Promise<any> {
     const { url, timeout } = config;
 
+    if (!this.SmartTaskExecutor) {
+      throw new Error('SmartTaskExecutor not initialized');
+    }
+
     console.log(`🧪 Testing: ${url}`);
 
     // Navigate to URL
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'navigate',
         primary: { value: url, timeout },
@@ -337,7 +368,7 @@ export class LocalAutomationWorker {
     );
 
     // Wait for page to fully load
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'wait',
         primary: { timeout: timeout || 5000 },
@@ -349,7 +380,7 @@ export class LocalAutomationWorker {
     // Take screenshot
     let screenshot: Buffer | null = null;
     if (config.captureScreenshot) {
-      screenshot = await SmartTaskExecutor.executeAction(
+      screenshot = await this.SmartTaskExecutor.executeAction(
         {
           type: 'screenshot',
           primary: {},
@@ -372,11 +403,15 @@ export class LocalAutomationWorker {
    * Execute custom task
    */
   private async executeCustom(config: LocalTaskConfig): Promise<any> {
+    if (!this.SmartTaskExecutor) {
+      throw new Error('SmartTaskExecutor not initialized');
+    }
+
     console.log(`⚙️ Executing custom task: ${config.id}`);
 
     // Navigate to URL if provided
     if (config.url) {
-      await SmartTaskExecutor.executeAction(
+      await this.SmartTaskExecutor.executeAction(
         {
           type: 'navigate',
           primary: { value: config.url },
@@ -548,7 +583,9 @@ export class LocalAutomationWorker {
       this.clearQueue();
 
       // Close browser
-      await SmartTaskExecutor.closeBrowser();
+      if (this.SmartTaskExecutor) {
+        await this.SmartTaskExecutor.closeBrowser();
+      }
 
       // Sync any pending data
       await databaseSync.syncAll();

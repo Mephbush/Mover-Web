@@ -10,8 +10,11 @@ import { adaptiveIntelligence, AdaptationContext } from './adaptive-intelligence
 import { knowledgeBase, KnowledgeEntry } from './knowledge-base';
 import { codeIntelligence, CodeError, CodeAnalysisResult } from './code-intelligence';
 import { databaseSync } from './database-sync';
-import { SmartTaskExecutor, SmartAction } from '../smart-task-executor';
 import { SmartErrorAnalyzer, ErrorContext } from '../error-handler';
+
+// Dynamic import types for Node.js-only modules
+type SmartAction = any;
+type SmartTaskExecutor = any;
 
 export interface AIContext {
   task: {
@@ -251,6 +254,17 @@ export class MasterAI {
     const maxRetries = context.constraints?.resourceLimit?.maxRetries || 3;
 
     try {
+      // Dynamically import SmartTaskExecutor (Node.js only)
+      let SmartTaskExecutor: any;
+      try {
+        const module = await import('../smart-task-executor');
+        SmartTaskExecutor = module.SmartTaskExecutor;
+      } catch (error: any) {
+        throw new Error(
+          'SmartTaskExecutor requires a Node.js environment. This task cannot be executed in the browser.'
+        );
+      }
+
       // Build smart actions from the plan
       const actions: SmartAction[] = this.convertPlanToActions(plan, context);
 
