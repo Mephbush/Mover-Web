@@ -583,7 +583,9 @@ export class LocalAutomationWorker {
       this.clearQueue();
 
       // Close browser
-      await SmartTaskExecutor.closeBrowser();
+      if (this.SmartTaskExecutor) {
+        await this.SmartTaskExecutor.closeBrowser();
+      }
 
       // Sync any pending data
       await databaseSync.syncAll();
