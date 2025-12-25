@@ -28,9 +28,9 @@ import { databaseSync } from './database-sync';
 
 /**
  * واجهة موحدة للوصول إلى جميع مكونات عقل AI
+ * Unified interface for accessing all AI Brain components (Browser-safe version)
  */
 export const AIBrain = {
-  master: masterAI,
   learning: learningEngine,
   strategic: strategicPlanner,
   adaptive: adaptiveIntelligence,
