@@ -2,12 +2,16 @@
  * Local Automation Worker
  * Executes automation tasks directly without GitHub Actions overhead
  * عامل الأتمتة المحلي - ينفذ مهام الأتمتة مباشرة دون تأخير GitHub Actions
+ *
+ * WARNING: This module requires a Node.js environment and cannot be used in browser code.
  */
 
 import { getMasterAI } from './ai-brain/master-ai';
-import { SmartTaskExecutor } from './smart-task-executor';
 import { learningEngine } from './ai-brain/learning-engine';
 import { databaseSync } from './ai-brain/database-sync';
+
+// Type definition for SmartTaskExecutor (actual import is dynamic)
+type SmartTaskExecutor = any;
 
 export interface LocalTaskConfig {
   id: string;
