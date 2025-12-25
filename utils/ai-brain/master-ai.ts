@@ -10,6 +10,8 @@ import { adaptiveIntelligence, AdaptationContext } from './adaptive-intelligence
 import { knowledgeBase, KnowledgeEntry } from './knowledge-base';
 import { codeIntelligence, CodeError, CodeAnalysisResult } from './code-intelligence';
 import { databaseSync } from './database-sync';
+import { SmartTaskExecutor, SmartAction } from '../smart-task-executor';
+import { SmartErrorAnalyzer, ErrorContext } from '../error-handler';
 
 export interface AIContext {
   task: {
