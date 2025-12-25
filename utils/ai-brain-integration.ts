@@ -71,6 +71,13 @@ export class AIBrainIntegration implements AutomationPipeline {
       console.log('✅ Stealth browser initialized');
       console.log();
 
+      // Step 6: Initialize performance tracking
+      console.log('📊 Step 6: Initializing performance tracking...');
+      await performanceTracker.initialize(userId);
+      this.performanceInitialized = true;
+      console.log('✅ Performance tracking ready');
+      console.log();
+
       const initTime = Date.now() - initStartTime;
 
       console.log('🧠 ==========================================');
