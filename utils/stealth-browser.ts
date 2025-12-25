@@ -1,8 +1,11 @@
 /**
  * Stealth Browser - Real Playwright-based browser with anti-detection
  * سترة متصفح - متصفح Playwright حقيقي مع منع الكشف
+ *
+ * NOTE: This is a Node.js-only module. It cannot be imported in browser code.
  */
 
+// @ts-ignore - Playwright is Node.js only
 import { chromium, Browser, BrowserContext, Page } from 'playwright';
 
 export interface StealthConfig {
