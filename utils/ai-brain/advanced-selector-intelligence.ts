@@ -1,0 +1,709 @@
+/**
+ * نظام ذكاء المحددات المتقدم
+ * Advanced Selector Intelligence System
+ * 
+ * يحسّن من قدرة الروبوت على اكتشاف والتعامل مع محددات العناصر
+ * Improves selector detection, ranking, and fallback strategies
+ */
+
+export interface SelectorCandidate {
+  selector: string;
+  type: 'css' | 'xpath' | 'id' | 'class' | 'data-testid' | 'aria-label' | 'text' | 'hybrid';
+  score: number; // 0-1
+  confidence: number; // 0-1
+  reliability: number; // معدل النجاح السابق
+  specificity: number; // مدى تخصص المحدد
+  robustness: number; // مدى مقاومة المحدد للتغييرات
+  estimatedWaitTime: number; // ms
+  fallbackLevel: number; // 0 = primary, 1+ = fallback
+  metadata: {
+    weight: number;
+    occurrences: number;
+    lastUsed: Date;
+    successCount: number;
+    failureCount: number;
+    tags: string[];
+  };
+}
+
+export interface SelectorContext {
+  website: string;
+  taskType: string; // login, click, type, extract, etc.
+  elementType: string; // button, input, link, div, etc.
+  elementRole?: string; // from ARIA
+  elementText?: string;
+  pageStructure?: any;
+  previousSelectors?: string[];
+}
+
+export interface SelectorStrategy {
+  primary: SelectorCandidate[];
+  fallbacks: SelectorCandidate[];
+  recommendations: string[];
+  estimatedSuccessRate: number;
+  reasoning: string;
+}
+
+export interface SelectorReport {
+  context: SelectorContext;
+  candidates: SelectorCandidate[];
+  strategy: SelectorStrategy;
+  timestamp: Date;
+  performance: {
+    foundElements: number;
+    totalAttempts: number;
+    successRate: number;
+    averageTime: number;
+  };
+}
+
+/**
+ * محرك اختيار المحددات الذكي المتقدم
+ */
+export class AdvancedSelectorIntelligence {
+  private learningCache: Map<string, SelectorCandidate[]> = new Map();
+  private performanceHistory: Map<string, SelectorReport[]> = new Map();
+  private selectorPatterns: Map<string, RegExp> = new Map();
+
+  /**
+   * Initialize selector patterns
+   */
+  constructor() {
+    this.initializeSelectorPatterns();
+  }
+
+  /**
+   * تهيئة أنماط المحددات الشهيرة
+   */
+  private initializeSelectorPatterns(): void {
+    // أنماط محددات شهيرة للعناصر المختلفة
+    this.selectorPatterns.set('email_field', /(?:email|mail|user|account)/i);
+    this.selectorPatterns.set('password_field', /(?:password|pass|pwd)/i);
+    this.selectorPatterns.set('submit_button', /(?:submit|login|signin|enter|search)/i);
+    this.selectorPatterns.set('search_field', /(?:search|query|find)/i);
+    this.selectorPatterns.set('first_name', /(?:first|fname|given)/i);
+    this.selectorPatterns.set('last_name', /(?:last|lname|family)/i);
+    this.selectorPatterns.set('phone_field', /(?:phone|mobile|tel)/i);
+    this.selectorPatterns.set('address_field', /(?:address|street|location)/i);
+  }
+
+  /**
+   * اختيار أفضل مجموعة من محددات العناصر
+   * 
+   * الخطوات:
+   * 1. توليد جميع المحددات الممكنة
+   * 2. تقييم كل محدد
+   * 3. ترتيب حسب الثقة والموثوقية
+   * 4. بناء استراتيجية مع fallbacks
+   */
+  async selectBestSelectors(
+    context: SelectorContext,
+    pageContent?: string,
+    pageStructure?: any
+  ): Promise<SelectorStrategy> {
+    console.log(`🎯 اختيار محددات ذكية للموقع: ${context.website}`);
+    console.log(`   المهمة: ${context.taskType}, نوع العنصر: ${context.elementType}`);
+
+    // 1. البحث في قاعدة التعلم
+    const learnedCandidates = await this.getLearnedSelectors(context);
+    console.log(`   📚 محددات متعلمة: ${learnedCandidates.length}`);
+
+    // 2. توليد محددات من محتوى الصفحة
+    const generatedCandidates = pageContent
+      ? this.generateSelectorsFromContent(pageContent, context)
+      : [];
+    console.log(`   🔍 محددات مولدة: ${generatedCandidates.length}`);
+
+    // 3. توليد محددات من البنية DOM
+    const structureCandidates = pageStructure
+      ? this.generateSelectorsFromStructure(pageStructure, context)
+      : [];
+    console.log(`   🏗️ محددات من البنية: ${structureCandidates.length}`);
+
+    // 4. دمج جميع المحددات
+    const allCandidates = [
+      ...learnedCandidates,
+      ...generatedCandidates,
+      ...structureCandidates,
+    ];
+
+    // 5. إزالة التكرار والتقييم
+    const uniqueCandidates = this.deduplicateSelectors(allCandidates);
+    console.log(`   🔄 محددات فريدة: ${uniqueCandidates.length}`);
+
+    // 6. تقييم كل محدد
+    const scoredCandidates = await this.scoreSelectors(
+      uniqueCandidates,
+      context
+    );
+    console.log(`   📊 تم تقييم المحددات بنجاح`);
+
+    // 7. بناء الاستراتيجية
+    const strategy = this.buildStrategy(scoredCandidates, context);
+    console.log(`   ✅ استراتيجية محددات جاهزة`);
+    console.log(`   🎯 معدل النجاح المتوقع: ${(strategy.estimatedSuccessRate * 100).toFixed(1)}%`);
+
+    return strategy;
+  }
+
+  /**
+   * الحصول على محددات متعلمة من التجارب السابقة
+   */
+  private async getLearnedSelectors(
+    context: SelectorContext
+  ): Promise<SelectorCandidate[]> {
+    const cacheKey = `${context.website}:${context.taskType}:${context.elementType}`;
+
+    // التحقق من الذاكرة المؤقتة
+    if (this.learningCache.has(cacheKey)) {
+      const cached = this.learningCache.get(cacheKey);
+      if (cached) return cached;
+    }
+
+    // في التنفيذ الفعلي، سيتم جلب البيانات من قاعدة البيانات
+    // For now, return empty array - will integrate with learning-engine
+    return [];
+  }
+
+  /**
+   * توليد محددات من محتوى الصفحة
+   */
+  private generateSelectorsFromContent(
+    pageContent: string,
+    context: SelectorContext
+  ): SelectorCandidate[] {
+    const candidates: SelectorCandidate[] = [];
+
+    // 1. البحث عن data-testid
+    const dataTestIdMatches = pageContent.match(
+      /data-testid=["']([^"']*)/gi
+    );
+    if (dataTestIdMatches) {
+      dataTestIdMatches.forEach((match) => {
+        const testId = match.replace(/data-testid=["']/, '');
+        candidates.push({
+          selector: `[data-testid="${testId}"]`,
+          type: 'data-testid',
+          score: 0.9,
+          confidence: 0.85,
+          reliability: 0.8,
+          specificity: 0.95,
+          robustness: 0.9,
+          estimatedWaitTime: 500,
+          fallbackLevel: 0,
+          metadata: {
+            weight: 100,
+            occurrences: 1,
+            lastUsed: new Date(),
+            successCount: 0,
+            failureCount: 0,
+            tags: ['data-testid', context.elementType],
+          },
+        });
+      });
+    }
+
+    // 2. البحث عن aria-label
+    const ariaLabelMatches = pageContent.match(
+      /aria-label=["']([^"']*)/gi
+    );
+    if (ariaLabelMatches) {
+      ariaLabelMatches.forEach((match) => {
+        const label = match.replace(/aria-label=["']/, '');
+        if (label.toLowerCase().includes(context.elementType.toLowerCase())) {
+          candidates.push({
+            selector: `[aria-label="${label}"]`,
+            type: 'aria-label',
+            score: 0.85,
+            confidence: 0.8,
+            reliability: 0.75,
+            specificity: 0.85,
+            robustness: 0.85,
+            estimatedWaitTime: 800,
+            fallbackLevel: 1,
+            metadata: {
+              weight: 80,
+              occurrences: 1,
+              lastUsed: new Date(),
+              successCount: 0,
+              failureCount: 0,
+              tags: ['aria-label', context.elementType],
+            },
+          });
+        }
+      });
+    }
+
+    // 3. البحث عن attributes محددة
+    candidates.push(...this.generateFromAttributes(pageContent, context));
+
+    // 4. البحث عن text content
+    if (context.elementText) {
+      candidates.push({
+        selector: `//*[contains(text(), "${context.elementText}")]`,
+        type: 'text',
+        score: 0.7,
+        confidence: 0.65,
+        reliability: 0.6,
+        specificity: 0.5,
+        robustness: 0.4,
+        estimatedWaitTime: 1500,
+        fallbackLevel: 2,
+        metadata: {
+          weight: 50,
+          occurrences: 1,
+          lastUsed: new Date(),
+          successCount: 0,
+          failureCount: 0,
+          tags: ['text-match', context.elementType],
+        },
+      });
+    }
+
+    return candidates;
+  }
+
+  /**
+   * توليد محددات من Attributes
+   */
+  private generateFromAttributes(
+    pageContent: string,
+    context: SelectorContext
+  ): SelectorCandidate[] {
+    const candidates: SelectorCandidate[] = [];
+
+    // البحث عن ID attributes
+    const idMatches = pageContent.match(/id=["']([^"']*)/gi);
+    if (idMatches) {
+      idMatches.forEach((match) => {
+        const id = match.replace(/id=["']/, '');
+        if (this.matchesContext(id, context)) {
+          candidates.push({
+            selector: `#${id}`,
+            type: 'id',
+            score: 0.95,
+            confidence: 0.9,
+            reliability: 0.85,
+            specificity: 1.0,
+            robustness: 0.95,
+            estimatedWaitTime: 300,
+            fallbackLevel: 0,
+            metadata: {
+              weight: 110,
+              occurrences: 1,
+              lastUsed: new Date(),
+              successCount: 0,
+              failureCount: 0,
+              tags: ['id', context.elementType],
+            },
+          });
+        }
+      });
+    }
+
+    // البحث عن Class attributes
+    const classMatches = pageContent.match(/class=["']([^"']*)/gi);
+    if (classMatches) {
+      classMatches.forEach((match) => {
+        const classes = match.replace(/class=["']/, '').split(' ');
+        classes.forEach((cls) => {
+          if (this.matchesContext(cls, context)) {
+            candidates.push({
+              selector: `.${cls}`,
+              type: 'class',
+              score: 0.75,
+              confidence: 0.7,
+              reliability: 0.65,
+              specificity: 0.6,
+              robustness: 0.65,
+              estimatedWaitTime: 600,
+              fallbackLevel: 1,
+              metadata: {
+                weight: 70,
+                occurrences: 1,
+                lastUsed: new Date(),
+                successCount: 0,
+                failureCount: 0,
+                tags: ['class', context.elementType],
+              },
+            });
+          }
+        });
+      });
+    }
+
+    return candidates;
+  }
+
+  /**
+   * توليد محددات من بنية DOM
+   */
+  private generateSelectorsFromStructure(
+    structure: any,
+    context: SelectorContext
+  ): SelectorCandidate[] {
+    const candidates: SelectorCandidate[] = [];
+
+    // سيتم تنفيذ هذا الجزء بناءً على بنية DOM الفعلية
+    // هنا نستخدم مثال بسيط
+
+    // محددات معتمدة على نوع العنصر
+    const elementSelectors = this.getElementTypeSelectors(context.elementType);
+    candidates.push(...elementSelectors);
+
+    return candidates;
+  }
+
+  /**
+   * الحصول على محددات معتمدة على نوع العنصر
+   */
+  private getElementTypeSelectors(elementType: string): SelectorCandidate[] {
+    const selectors: Map<string, SelectorCandidate[]> = new Map([
+      [
+        'input',
+        [
+          {
+            selector: 'input[type="text"]',
+            type: 'css',
+            score: 0.7,
+            confidence: 0.65,
+            reliability: 0.6,
+            specificity: 0.7,
+            robustness: 0.65,
+            estimatedWaitTime: 500,
+            fallbackLevel: 1,
+            metadata: {
+              weight: 70,
+              occurrences: 1,
+              lastUsed: new Date(),
+              successCount: 0,
+              failureCount: 0,
+              tags: ['input-text'],
+            },
+          },
+        ],
+      ],
+      [
+        'button',
+        [
+          {
+            selector: 'button',
+            type: 'css',
+            score: 0.75,
+            confidence: 0.7,
+            reliability: 0.65,
+            specificity: 0.5,
+            robustness: 0.6,
+            estimatedWaitTime: 400,
+            fallbackLevel: 1,
+            metadata: {
+              weight: 75,
+              occurrences: 1,
+              lastUsed: new Date(),
+              successCount: 0,
+              failureCount: 0,
+              tags: ['button'],
+            },
+          },
+        ],
+      ],
+      [
+        'link',
+        [
+          {
+            selector: 'a[href]',
+            type: 'css',
+            score: 0.7,
+            confidence: 0.65,
+            reliability: 0.6,
+            specificity: 0.5,
+            robustness: 0.55,
+            estimatedWaitTime: 500,
+            fallbackLevel: 1,
+            metadata: {
+              weight: 70,
+              occurrences: 1,
+              lastUsed: new Date(),
+              successCount: 0,
+              failureCount: 0,
+              tags: ['link'],
+            },
+          },
+        ],
+      ],
+    ]);
+
+    return selectors.get(elementType) || [];
+  }
+
+  /**
+   * تقييم المحددات بناءً على معايير متعددة
+   */
+  private async scoreSelectors(
+    candidates: SelectorCandidate[],
+    context: SelectorContext
+  ): Promise<SelectorCandidate[]> {
+    const scored = candidates.map((candidate) => {
+      // 1. حساب درجة الثقة بناءً على النوع
+      const typeScore = this.getTypeScore(candidate.type);
+
+      // 2. حساب درجة الموثوقية من التاريخ
+      const reliabilityScore = candidate.metadata.successCount /
+        (candidate.metadata.successCount + candidate.metadata.failureCount + 1);
+
+      // 3. حساب درجة الخصوصية
+      const specificityScore = this.calculateSpecificity(candidate.selector);
+
+      // 4. حساب درجة المقاومة للتغييرات
+      const robustnessScore = this.calculateRobustness(
+        candidate.selector,
+        context
+      );
+
+      // 5. الدرجة الكلية (مرجح)
+      const finalScore =
+        typeScore * 0.3 + // وزن النوع
+        reliabilityScore * 0.3 + // وزن الموثوقية
+        specificityScore * 0.2 + // وزن الخصوصية
+        robustnessScore * 0.2; // وزن المقاومة
+
+      return {
+        ...candidate,
+        score: Math.max(0, Math.min(1, finalScore)),
+        confidence: Math.max(0, Math.min(1, finalScore * 0.9)),
+      };
+    });
+
+    // ترتيب تنازلي حسب الدرجة
+    return scored.sort((a, b) => b.score - a.score);
+  }
+
+  /**
+   * حساب درجة النوع
+   */
+  private getTypeScore(type: string): number {
+    const scores: Record<string, number> = {
+      id: 0.95,
+      'data-testid': 0.9,
+      'aria-label': 0.85,
+      css: 0.7,
+      xpath: 0.65,
+      class: 0.6,
+      text: 0.5,
+      hybrid: 0.75,
+    };
+    return scores[type] || 0.5;
+  }
+
+  /**
+   * حساب درجة الخصوصية (كم عدد العناصر التي تطابق المحدد)
+   */
+  private calculateSpecificity(selector: string): number {
+    let score = 0.5;
+
+    // IDs لها specificity عالية جداً
+    if (selector.includes('#')) score = Math.max(score, 0.95);
+
+    // data-testid عالية جداً
+    if (selector.includes('[data-testid')) score = Math.max(score, 0.9);
+
+    // Classes عالية
+    if (selector.includes('.')) score = Math.max(score, 0.7);
+
+    // XPath عالية إذا كانت محددة بشكل دقيق
+    if (selector.startsWith('/')) {
+      if (selector.includes('[position()') || selector.includes('[1]')) {
+        score = Math.max(score, 0.8);
+      }
+    }
+
+    return Math.min(score, 1.0);
+  }
+
+  /**
+   * حساب درجة المقاومة للتغييرات
+   */
+  private calculateRobustness(selector: string, context: SelectorContext): number {
+    let score = 0.5;
+
+    // المحددات المبنية على attributes ثابتة أكثر
+    if (selector.includes('[data-') || selector.includes('[aria-')) {
+      score = Math.max(score, 0.85);
+    }
+
+    // IDs ثابتة جداً
+    if (selector.startsWith('#')) {
+      score = Math.max(score, 0.9);
+    }
+
+    // المحددات القائمة على text أقل stability
+    if (selector.includes('text()')) {
+      score = Math.min(score, 0.4);
+    }
+
+    // المحددات القائمة على position قد تتغير
+    if (selector.includes('[position()') || selector.includes('nth-')) {
+      score = Math.min(score, 0.5);
+    }
+
+    return Math.min(score, 1.0);
+  }
+
+  /**
+   * التحقق من توافق المحدد مع السياق
+   */
+  private matchesContext(candidate: string, context: SelectorContext): boolean {
+    const lowerCandidate = candidate.toLowerCase();
+    const lowerType = context.elementType.toLowerCase();
+
+    // التحقق من أنماط محددة
+    if (this.selectorPatterns.has(context.taskType)) {
+      const pattern = this.selectorPatterns.get(context.taskType);
+      if (pattern && pattern.test(candidate)) {
+        return true;
+      }
+    }
+
+    // التحقق من توافق أساسي
+    return (
+      lowerCandidate.includes(lowerType) ||
+      lowerCandidate.includes(context.taskType.toLowerCase())
+    );
+  }
+
+  /**
+   * إزالة محددات مكررة
+   */
+  private deduplicateSelectors(
+    candidates: SelectorCandidate[]
+  ): SelectorCandidate[] {
+    const seen = new Set<string>();
+    return candidates.filter((candidate) => {
+      if (seen.has(candidate.selector)) {
+        return false;
+      }
+      seen.add(candidate.selector);
+      return true;
+    });
+  }
+
+  /**
+   * بناء استراتيجية محددات
+   */
+  private buildStrategy(
+    candidates: SelectorCandidate[],
+    context: SelectorContext
+  ): SelectorStrategy {
+    // الفصل بين المحددات الأولية والبدائل
+    const primary = candidates.filter((c) => c.fallbackLevel === 0);
+    const fallbacks = candidates.filter((c) => c.fallbackLevel > 0);
+
+    // ضمان وجود أساسيات
+    if (primary.length === 0 && candidates.length > 0) {
+      primary.push(candidates[0]);
+      fallbacks.splice(fallbacks.indexOf(candidates[0]), 1);
+    }
+
+    // حساب معدل النجاح المتوقع
+    const primarySuccess =
+      primary.length > 0 ? primary[0].confidence : 0.3;
+    const fallbackBoost =
+      fallbacks.reduce((sum, f) => sum + f.confidence, 0) /
+      (fallbacks.length || 1);
+    const estimatedSuccessRate = Math.min(
+      0.99,
+      primarySuccess + fallbackBoost * 0.2
+    );
+
+    const recommendations: string[] = [];
+
+    // إنشاء توصيات بناءً على السياق
+    if (primary.length === 0) {
+      recommendations.push('⚠️ لم يتم العثور على محددات أولية قوية');
+      recommendations.push('💡 جرب استخدام DevTools للبحث عن data-testid');
+    }
+
+    if (primary.length > 0 && primary[0].confidence < 0.7) {
+      recommendations.push('⚠️ مستوى ثقة منخفض في المحدد الأول');
+      recommendations.push('💡 استخدم عدة محددات بديلة');
+    }
+
+    if (context.elementType === 'input' && !candidates.some((c) => c.type === 'id')) {
+      recommendations.push('💡 البحث عن ID أو data-testid للـ input');
+    }
+
+    const reasoning = `تم اختيار ${primary.length} محددات أولية و ${fallbacks.length} محددات بديلة. 
+معدل النجاح المتوقع: ${(estimatedSuccessRate * 100).toFixed(1)}%. 
+الأولوية: ${primary.map((c) => c.selector).join(', ')}`;
+
+    return {
+      primary: primary.slice(0, 3), // أقصى 3 محددات أولية
+      fallbacks: fallbacks.slice(0, 5), // أقصى 5 محددات بديلة
+      recommendations,
+      estimatedSuccessRate,
+      reasoning,
+    };
+  }
+
+  /**
+   * تحديث أداء المحدد بناءً على النتائج
+   */
+  async updatePerformance(
+    selector: string,
+    success: boolean,
+    executionTime: number,
+    context: SelectorContext
+  ): Promise<void> {
+    const cacheKey = `${context.website}:${context.taskType}:${context.elementType}`;
+
+    if (this.learningCache.has(cacheKey)) {
+      const cached = this.learningCache.get(cacheKey);
+      if (cached) {
+        const candidate = cached.find((c) => c.selector === selector);
+        if (candidate) {
+          if (success) {
+            candidate.metadata.successCount++;
+            candidate.reliability = candidate.metadata.successCount /
+              (candidate.metadata.successCount +
+                candidate.metadata.failureCount);
+          } else {
+            candidate.metadata.failureCount++;
+          }
+          candidate.metadata.lastUsed = new Date();
+        }
+      }
+    }
+  }
+
+  /**
+   * الحصول على تقرير تفصيلي عن المحددات
+   */
+  getDetailedReport(
+    strategy: SelectorStrategy,
+    context: SelectorContext
+  ): SelectorReport {
+    return {
+      context,
+      candidates: [...strategy.primary, ...strategy.fallbacks],
+      strategy,
+      timestamp: new Date(),
+      performance: {
+        foundElements: 0,
+        totalAttempts: 0,
+        successRate: 0,
+        averageTime: 0,
+      },
+    };
+  }
+
+  /**
+   * مسح الذاكرة المؤقتة
+   */
+  clearCache(): void {
+    this.learningCache.clear();
+    console.log('✅ تم مسح ذاكرة المحددات المؤقتة');
+  }
+}
+
+// Export singleton instance
+export const advancedSelectorIntelligence = new AdvancedSelectorIntelligence();
