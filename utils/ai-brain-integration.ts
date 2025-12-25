@@ -25,6 +25,7 @@ export class AIBrainIntegration implements AutomationPipeline {
   private userId: string | null = null;
   private initialized = false;
   private startTime = Date.now();
+  private performanceInitialized = false;
 
   /**
    * Initialize the complete AI brain system
