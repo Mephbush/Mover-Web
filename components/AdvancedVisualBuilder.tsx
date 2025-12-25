@@ -1,7 +1,6 @@
 import type { Task } from '../types';
 import { useState } from 'react';
 import { Plus, Trash2, MoveUp, MoveDown, Save, Play, Copy, AlertTriangle, CheckCircle, Zap, GitBranch } from 'lucide-react';
-import { SmartAction, SmartTaskTemplates } from '../utils/smart-task-executor';
 
 type AdvancedVisualBuilderProps = {
   onTaskCreated: (task: Task) => void;
