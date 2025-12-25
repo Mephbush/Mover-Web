@@ -8,6 +8,7 @@ import { getLocalWorker, LocalTaskConfig } from './local-automation-worker';
 import { SmartTaskExecutor } from './smart-task-executor';
 import { learningEngine } from './ai-brain/learning-engine';
 import { databaseSync } from './ai-brain/database-sync';
+import { performanceTracker } from './ai-brain/performance-tracker';
 
 export interface AutomationPipeline {
   initialize: (userId: string) => Promise<void>;
@@ -24,6 +25,7 @@ export class AIBrainIntegration implements AutomationPipeline {
   private userId: string | null = null;
   private initialized = false;
   private startTime = Date.now();
+  private performanceInitialized = false;
 
   /**
    * Initialize the complete AI brain system
@@ -69,6 +71,13 @@ export class AIBrainIntegration implements AutomationPipeline {
       console.log('✅ Stealth browser initialized');
       console.log();
 
+      // Step 6: Initialize performance tracking
+      console.log('📊 Step 6: Initializing performance tracking...');
+      await performanceTracker.initialize(userId);
+      this.performanceInitialized = true;
+      console.log('✅ Performance tracking ready');
+      console.log();
+
       const initTime = Date.now() - initStartTime;
 
       console.log('🧠 ==========================================');
@@ -106,6 +115,33 @@ export class AIBrainIntegration implements AutomationPipeline {
       const result = await worker.executeTask(task);
 
       const taskTime = Date.now() - taskStartTime;
+
+      // Track performance metrics
+      if (this.performanceInitialized) {
+        const experience = {
+          id: task.id,
+          taskType: task.type,
+          website: new URL(task.url).hostname,
+          action: task.type,
+          selector: task.selectors ? Object.keys(task.selectors)[0] : 'unknown',
+          success: result.success,
+          timestamp: new Date(),
+          context: {
+            url: task.url,
+            pageStructure: result.pageStructure,
+            errorMessage: result.error,
+          },
+          metadata: {
+            executionTime: taskTime,
+            retryCount: result.retryCount || 0,
+            confidence: result.confidence || (result.success ? 0.9 : 0.1),
+          },
+        };
+
+        // Update metrics with current experiences
+        const allExperiences = learningEngine.getAllExperiences();
+        await performanceTracker.calculateMetrics(allExperiences);
+      }
 
       console.log();
       console.log('📋 ==========================================');
@@ -229,6 +265,33 @@ export class AIBrainIntegration implements AutomationPipeline {
       console.log(`  • Running: ${queueStatus.isRunning ? 'Yes' : 'No'}`);
       console.log();
 
+      // Get performance metrics
+      let performanceMetrics = null;
+      if (this.performanceInitialized) {
+        await performanceTracker.calculateMetrics(allExperiences);
+        performanceMetrics = performanceTracker.getMetrics();
+
+        if (performanceMetrics) {
+          console.log('📊 Performance Metrics:');
+          console.log(`  • Overall Success Rate: ${(performanceMetrics.overallSuccessRate * 100).toFixed(2)}%`);
+          console.log(`  • Avg Execution Time: ${performanceMetrics.averageExecutionTime.toFixed(0)}ms`);
+          console.log(`  • Learning Velocity: ${performanceMetrics.learningVelocity.toFixed(2)}%`);
+          console.log(`  • Top Error: ${performanceMetrics.topErrors[0]?.error || 'None'}`);
+          console.log();
+        }
+      }
+
+      const performanceReport = performanceTracker.generatePerformanceReport();
+      console.log('📈 Performance Report:');
+      console.log(`  Summary: ${performanceReport.summary}`);
+      if (performanceReport.highlights.length > 0) {
+        performanceReport.highlights.forEach((h) => console.log(`  ${h}`));
+      }
+      if (performanceReport.concerns.length > 0) {
+        performanceReport.concerns.forEach((c) => console.log(`  ${c}`));
+      }
+      console.log();
+
       console.log('📊 ==========================================');
       console.log();
 
@@ -245,6 +308,8 @@ export class AIBrainIntegration implements AutomationPipeline {
           seconds: uptimeSeconds,
         },
         worker: queueStatus,
+        performance: performanceMetrics,
+        performanceReport,
       };
     } catch (error: any) {
       console.error('❌ Failed to get statistics:', error.message);
@@ -351,6 +416,45 @@ export class AIBrainIntegration implements AutomationPipeline {
         details: [error.message],
       };
     }
+  }
+
+  /**
+   * Get performance metrics
+   */
+  getPerformanceMetrics() {
+    if (!this.performanceInitialized) {
+      return null;
+    }
+    return performanceTracker.getMetrics();
+  }
+
+  /**
+   * Get performance report
+   */
+  getPerformanceReport() {
+    return performanceTracker.generatePerformanceReport();
+  }
+
+  /**
+   * Get performance trends
+   */
+  getPerformanceTrends(limit: number = 100) {
+    return performanceTracker.getTrends(limit);
+  }
+
+  /**
+   * Reset performance metrics
+   */
+  resetPerformanceMetrics() {
+    performanceTracker.resetMetrics();
+    console.log('✅ Performance metrics reset');
+  }
+
+  /**
+   * Get summary statistics
+   */
+  getSummaryStats() {
+    return performanceTracker.getSummaryStats();
   }
 }
 

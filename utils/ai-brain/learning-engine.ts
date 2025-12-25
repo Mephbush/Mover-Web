@@ -45,6 +45,23 @@ export interface LearningModel {
   lastUpdated: Date;
 }
 
+export interface PatternCluster {
+  id: string;
+  name: string;
+  patterns: Pattern[];
+  centroid: any;
+  similarity: number;
+  commonFeatures: string[];
+  representativePattern: Pattern;
+}
+
+export interface ClusteringResult {
+  clusters: PatternCluster[];
+  totalPatterns: number;
+  clusteringQuality: number;
+  timestamp: Date;
+}
+
 /**
  * محرك التعلم الآلي للروبوت
  */
@@ -375,6 +392,302 @@ export class LearningEngine {
    */
   importModel(model: LearningModel): void {
     this.models.set(model.domain, model);
+  }
+
+  /**
+   * تجميع الأنماط المتشابهة
+   */
+  async clusterPatterns(minSimilarity: number = 0.7): Promise<ClusteringResult> {
+    console.log('🔍 Starting pattern clustering...');
+    const startTime = Date.now();
+
+    const patterns = Array.from(this.patterns.values());
+    if (patterns.length === 0) {
+      return {
+        clusters: [],
+        totalPatterns: 0,
+        clusteringQuality: 0,
+        timestamp: new Date(),
+      };
+    }
+
+    const clusters: PatternCluster[] = [];
+    const clusterMap = new Map<string, string>(); // pattern id -> cluster id
+    let clusterCounter = 0;
+
+    // خوارزمية التجميع البسيطة (Single-pass clustering)
+    for (let i = 0; i < patterns.length; i++) {
+      const pattern = patterns[i];
+
+      // تحقق مما إذا تم تجميع هذا النمط بالفعل
+      if (clusterMap.has(pattern.id)) {
+        continue;
+      }
+
+      // إنشاء مجموعة جديدة
+      const clusterId = `cluster_${clusterCounter++}`;
+      const cluster: PatternCluster = {
+        id: clusterId,
+        name: `${pattern.type} - ${pattern.pattern.substring(0, 20)}`,
+        patterns: [pattern],
+        centroid: this.calculateCentroid([pattern]),
+        similarity: 1.0,
+        commonFeatures: this.extractFeatures(pattern),
+        representativePattern: pattern,
+      };
+
+      clusterMap.set(pattern.id, clusterId);
+
+      // ابحث عن أنماط مشابهة
+      for (let j = i + 1; j < patterns.length; j++) {
+        const otherPattern = patterns[j];
+
+        if (clusterMap.has(otherPattern.id)) {
+          continue;
+        }
+
+        const similarity = this.calculateSimilarity(pattern, otherPattern);
+
+        if (similarity >= minSimilarity) {
+          cluster.patterns.push(otherPattern);
+          clusterMap.set(otherPattern.id, clusterId);
+
+          // تحديث الوسيط
+          cluster.centroid = this.calculateCentroid(cluster.patterns);
+
+          // تحديث الميزات المشتركة
+          cluster.commonFeatures = this.findCommonFeatures(
+            cluster.patterns.map(p => this.extractFeatures(p))
+          );
+        }
+      }
+
+      clusters.push(cluster);
+    }
+
+    // حساب جودة التجميع
+    const clusteringQuality = this.calculateClusteringQuality(clusters, patterns);
+
+    const processingTime = Date.now() - startTime;
+
+    console.log(`✅ Clustering complete: ${clusters.length} clusters formed`);
+    console.log(`📊 Quality score: ${clusteringQuality.toFixed(2)}`);
+    console.log(`⏱️ Processing time: ${processingTime}ms`);
+
+    return {
+      clusters,
+      totalPatterns: patterns.length,
+      clusteringQuality,
+      timestamp: new Date(),
+    };
+  }
+
+  /**
+   * حساب التشابه بين نمطين
+   */
+  private calculateSimilarity(pattern1: Pattern, pattern2: Pattern): number {
+    let similarity = 0;
+
+    // تشابه النوع
+    if (pattern1.type === pattern2.type) {
+      similarity += 0.3;
+    }
+
+    // تشابه النص (Levenshtein distance)
+    const textSimilarity = this.levenshteinSimilarity(
+      pattern1.pattern,
+      pattern2.pattern
+    );
+    similarity += textSimilarity * 0.4;
+
+    // تشابه معدل النجاح
+    const successRateDiff = Math.abs(pattern1.successRate - pattern2.successRate);
+    similarity += Math.max(0, 1 - successRateDiff) * 0.2;
+
+    // تشابه السياقات المشتركة
+    const commonContexts = pattern1.contexts.filter(c =>
+      pattern2.contexts.includes(c)
+    ).length;
+    const totalContexts = new Set([...pattern1.contexts, ...pattern2.contexts])
+      .size;
+    const contextSimilarity =
+      totalContexts > 0 ? commonContexts / totalContexts : 0;
+    similarity += contextSimilarity * 0.1;
+
+    return Math.min(1, similarity);
+  }
+
+  /**
+   * حساب تشابه Levenshtein بين نصين
+   */
+  private levenshteinSimilarity(str1: string, str2: string): number {
+    const distance = this.levenshteinDistance(str1, str2);
+    const maxLength = Math.max(str1.length, str2.length);
+    return 1 - distance / maxLength;
+  }
+
+  /**
+   * حساب مسافة Levenshtein
+   */
+  private levenshteinDistance(str1: string, str2: string): number {
+    const matrix: number[][] = [];
+
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+
+    return matrix[str2.length][str1.length];
+  }
+
+  /**
+   * استخراج الميزات من نمط
+   */
+  private extractFeatures(pattern: Pattern): string[] {
+    const features: string[] = [];
+
+    features.push(`type:${pattern.type}`);
+
+    // استخراج الميزات من النص (كلمات مفتاحية)
+    const keywords = pattern.pattern.match(/[a-zA-Z]+/g) || [];
+    features.push(...keywords.map(k => `keyword:${k}`));
+
+    // إضافة النطاق الرقمي
+    if (pattern.successRate > 0.8) {
+      features.push('high_success');
+    } else if (pattern.successRate < 0.3) {
+      features.push('low_success');
+    }
+
+    if (pattern.occurrences > 10) {
+      features.push('frequently_used');
+    }
+
+    return features;
+  }
+
+  /**
+   * إيجاد الميزات المشتركة بين مجموعة من الأنماط
+   */
+  private findCommonFeatures(featuresList: string[][]): string[] {
+    if (featuresList.length === 0) {
+      return [];
+    }
+
+    // عد تكرار كل ميزة
+    const featureCount = new Map<string, number>();
+    for (const features of featuresList) {
+      for (const feature of features) {
+        featureCount.set(feature, (featureCount.get(feature) || 0) + 1);
+      }
+    }
+
+    // أرجع الميزات التي تظهر في أكثر من 50% من الأنماط
+    const threshold = featuresList.length / 2;
+    return Array.from(featureCount.entries())
+      .filter(([, count]) => count >= threshold)
+      .map(([feature]) => feature);
+  }
+
+  /**
+   * حساب الوسيط للمجموعة
+   */
+  private calculateCentroid(patterns: Pattern[]): any {
+    if (patterns.length === 0) {
+      return {};
+    }
+
+    return {
+      avgSuccessRate:
+        patterns.reduce((sum, p) => sum + p.successRate, 0) / patterns.length,
+      avgOccurrences:
+        patterns.reduce((sum, p) => sum + p.occurrences, 0) / patterns.length,
+      avgEffectiveness:
+        patterns.reduce((sum, p) => sum + p.effectiveness, 0) / patterns.length,
+      types: Array.from(new Set(patterns.map(p => p.type))),
+    };
+  }
+
+  /**
+   * حساب جودة التجميع
+   */
+  private calculateClusteringQuality(
+    clusters: PatternCluster[],
+    allPatterns: Pattern[]
+  ): number {
+    if (clusters.length === 0 || allPatterns.length === 0) {
+      return 0;
+    }
+
+    let qualityScore = 0;
+
+    // التوازن بين عدد المجموعات وحجم النمط
+    const clusterBalance =
+      1 - Math.abs(clusters.length - Math.sqrt(allPatterns.length)) / allPatterns.length;
+    qualityScore += clusterBalance * 0.3;
+
+    // متوسط التشابه داخل المجموعات
+    let intraClusterSimilarity = 0;
+    let totalComparisons = 0;
+
+    for (const cluster of clusters) {
+      for (let i = 0; i < cluster.patterns.length; i++) {
+        for (let j = i + 1; j < cluster.patterns.length; j++) {
+          intraClusterSimilarity += this.calculateSimilarity(
+            cluster.patterns[i],
+            cluster.patterns[j]
+          );
+          totalComparisons++;
+        }
+      }
+    }
+
+    const avgIntraSimilarity =
+      totalComparisons > 0 ? intraClusterSimilarity / totalComparisons : 0;
+    qualityScore += avgIntraSimilarity * 0.7;
+
+    return Math.min(1, qualityScore);
+  }
+
+  /**
+   * الحصول على المجموعات الموصى بها للموقع
+   */
+  async getRecommendedClusters(
+    website: string,
+    limit: number = 5
+  ): Promise<PatternCluster[]> {
+    const websitePatterns = Array.from(this.patterns.values()).filter(p =>
+      p.contexts.includes(website)
+    );
+
+    if (websitePatterns.length === 0) {
+      return [];
+    }
+
+    const result = await this.clusterPatterns(0.6);
+    return result.clusters.sort((a, b) => {
+      // ترتيب حسب الفعالية والاستخدام
+      const aScore = a.representativePattern.effectiveness;
+      const bScore = b.representativePattern.effectiveness;
+      return bScore - aScore;
+    }).slice(0, limit);
   }
 
   // ====== وظائف مساعدة خاصة ======
