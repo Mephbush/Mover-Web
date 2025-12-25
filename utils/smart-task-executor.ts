@@ -1,7 +1,17 @@
 /**
  * Smart Task Executor - Real browser automation with intelligent fallbacks
  * نظام تنفيذ مهام ذكي مع متصفح حقيقي
+ *
+ * WARNING: This is a Node.js-only module and cannot be imported in browser code.
  */
+
+// Prevent import in browser
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  throw new Error(
+    'smart-task-executor.ts is a Node.js-only module. ' +
+    'It cannot be imported in browser code.'
+  );
+}
 
 import { SmartRetryManager, SmartErrorAnalyzer, ErrorContext } from './error-handler';
 import { StealthBrowser } from './stealth-browser';
