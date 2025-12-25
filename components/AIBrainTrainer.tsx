@@ -40,7 +40,7 @@ interface TrainingSession {
 
 export function AIBrainTrainer() {
   const [activeTab, setActiveTab] = useState('overview');
-  const [training Status, setTrainingStatus] = useState<'idle' | 'training' | 'paused'>('idle');
+  const [trainingStatus, setTrainingStatus] = useState<'idle' | 'training' | 'paused'>('idle');
   const [currentSession, setCurrentSession] = useState<TrainingSession | null>(null);
   const [trainingSessions, setTrainingSessions] = useState<TrainingSession[]>([]);
   const [trainingPhases, setTrainingPhases] = useState<TrainingPhase[]>([
