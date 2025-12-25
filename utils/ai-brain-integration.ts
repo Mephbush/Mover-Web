@@ -356,8 +356,12 @@ export class AIBrainIntegration implements AutomationPipeline {
 
       // Step 2: Shutdown browser
       console.log('🌐 Step 2: Closing browser...');
-      await SmartTaskExecutor.closeBrowser();
-      console.log('✅ Browser closed');
+      if (this.SmartTaskExecutor) {
+        await this.SmartTaskExecutor.closeBrowser();
+        console.log('✅ Browser closed');
+      } else {
+        console.log('⚠️ Browser not initialized');
+      }
       console.log();
 
       // Step 3: Final sync
