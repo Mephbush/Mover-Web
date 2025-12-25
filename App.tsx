@@ -1,4 +1,4 @@
-b import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { AppProvider } from './contexts/AppContext';
 import { MainApp } from './components/MainApp';
 import { LandingPage } from './components/LandingPage';
