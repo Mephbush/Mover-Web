@@ -403,11 +403,15 @@ export class LocalAutomationWorker {
    * Execute custom task
    */
   private async executeCustom(config: LocalTaskConfig): Promise<any> {
+    if (!this.SmartTaskExecutor) {
+      throw new Error('SmartTaskExecutor not initialized');
+    }
+
     console.log(`⚙️ Executing custom task: ${config.id}`);
 
     // Navigate to URL if provided
     if (config.url) {
-      await SmartTaskExecutor.executeAction(
+      await this.SmartTaskExecutor.executeAction(
         {
           type: 'navigate',
           primary: { value: config.url },
