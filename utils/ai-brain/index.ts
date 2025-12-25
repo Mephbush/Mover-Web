@@ -144,7 +144,6 @@ export const AIBrain = {
     const learningStats = learningEngine.getStatistics();
     const knowledgeStats = knowledgeBase.getStatistics();
     const codeStats = codeIntelligence.getLearningStats();
-    const performance = await masterAI.getPerformanceReport();
     const settings = await databaseSync.loadSettings();
 
     return {
