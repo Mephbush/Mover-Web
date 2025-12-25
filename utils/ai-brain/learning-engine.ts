@@ -456,14 +456,53 @@ export class LearningEngine {
   }
 
   private async persistExperience(experience: Experience): Promise<void> {
-    // حفظ في قاعدة البيانات (Supabase)
-    // سيتم التنفيذ عند الدمج مع Supabase
-    console.log('💾 حفظ التجربة:', experience.id);
+    try {
+      // Save experience to Supabase via DatabaseSync
+      await databaseSync.saveExperience(experience);
+      console.log('💾 Experience saved:', experience.id);
+    } catch (error: any) {
+      // Fallback to local storage if database sync fails
+      console.warn('⚠️ Failed to persist experience to database:', error.message);
+      // Keep in memory as fallback
+    }
   }
 
   private async persistModel(model: LearningModel): Promise<void> {
-    // حفظ النموذج في قاعدة البيانات
-    console.log('💾 حفظ النموذج:', model.domain);
+    try {
+      // Save model to Supabase via DatabaseSync
+      await databaseSync.saveModel({
+        id: model.domain,
+        website: model.domain,
+        type: 'learning_model',
+        data: {
+          patterns: Array.from(model.patterns),
+          strategies: Array.from(model.successfulStrategies.entries()),
+          failures: Array.from(model.failurePatterns.entries()),
+          optimizations: Array.from(model.optimizations.entries()),
+        },
+        samples: Array.from(model.successfulStrategies.values()).reduce((a, b) => a + b, 0),
+        accuracy: this.calculateModelAccuracy(model),
+        active: true,
+        metadata: {
+          lastUpdated: model.lastUpdated,
+        },
+      });
+      console.log('💾 Model saved:', model.domain);
+    } catch (error: any) {
+      // Fallback if database sync fails
+      console.warn('⚠️ Failed to persist model to database:', error.message);
+      // Keep in memory as fallback
+    }
+  }
+
+  private calculateModelAccuracy(model: LearningModel): number {
+    if (model.patterns.length === 0) return 0;
+
+    const avgSuccessRate =
+      Array.from(model.patterns).reduce((sum, p) => sum + (p[1]?.successRate || 0), 0) /
+      model.patterns.length;
+
+    return Math.min(avgSuccessRate, 1.0);
   }
 }
 
