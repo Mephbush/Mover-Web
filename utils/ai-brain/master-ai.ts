@@ -80,6 +80,54 @@ export interface AIPerformance {
 export class MasterAI {
   private executionHistory: Map<string, any[]> = new Map();
   private performanceMetrics: Map<string, AIPerformance> = new Map();
+  private isInitialized = false;
+  private userId: string | null = null;
+
+  /**
+   * Initialize the Master AI with persistence and real browser
+   */
+  async initialize(userId: string): Promise<void> {
+    if (this.isInitialized) return;
+
+    console.log('🧠 Initializing Master AI Brain...');
+
+    this.userId = userId;
+
+    try {
+      // Initialize persistence layer
+      await learningEngine.initialize(userId);
+      await databaseSync.initialize(userId);
+
+      // Initialize real browser automation
+      await SmartTaskExecutor.initializeBrowser();
+
+      this.isInitialized = true;
+      console.log('✅ Master AI Brain initialized with real execution');
+    } catch (error: any) {
+      console.error('❌ Failed to initialize Master AI:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Shutdown the Master AI and cleanup resources
+   */
+  async shutdown(): Promise<void> {
+    console.log('🧠 Shutting down Master AI Brain...');
+
+    try {
+      // Sync any pending data
+      await databaseSync.syncAll();
+
+      // Close browser
+      await SmartTaskExecutor.closeBrowser();
+
+      this.isInitialized = false;
+      console.log('✅ Master AI Brain shutdown complete');
+    } catch (error: any) {
+      console.error('❌ Error during shutdown:', error.message);
+    }
+  }
 
   /**
    * اتخاذ قرار ذكي شامل
