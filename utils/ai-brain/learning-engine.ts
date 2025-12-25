@@ -45,6 +45,23 @@ export interface LearningModel {
   lastUpdated: Date;
 }
 
+export interface PatternCluster {
+  id: string;
+  name: string;
+  patterns: Pattern[];
+  centroid: any;
+  similarity: number;
+  commonFeatures: string[];
+  representativePattern: Pattern;
+}
+
+export interface ClusteringResult {
+  clusters: PatternCluster[];
+  totalPatterns: number;
+  clusteringQuality: number;
+  timestamp: Date;
+}
+
 /**
  * محرك التعلم الآلي للروبوت
  */
