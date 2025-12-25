@@ -16,7 +16,9 @@ export * from './code-intelligence';
 // Database sync is browser-safe (uses Supabase client SDK)
 export * from './database-sync';
 
-import { masterAI } from './master-ai';
+// NOTE: master-ai is Node.js-only and should not be exported here
+// Import it only from server-side code using:
+// import { getMasterAI } from '@/utils/ai-brain/master-ai'
 import { learningEngine } from './learning-engine';
 import { strategicPlanner } from './strategic-planner';
 import { adaptiveIntelligence } from './adaptive-intelligence';
