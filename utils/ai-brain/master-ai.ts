@@ -1120,5 +1120,21 @@ export class MasterAI {
   }
 }
 
-// مثيل مشترك
-export const masterAI = new MasterAI();
+// Shared instance with lazy initialization
+let masterAIInstance: MasterAI | null = null;
+
+export async function getMasterAI(userId?: string): Promise<MasterAI> {
+  if (!masterAIInstance) {
+    masterAIInstance = new MasterAI();
+  }
+
+  // Initialize if userId provided and not yet initialized
+  if (userId && !masterAIInstance['isInitialized']) {
+    await masterAIInstance.initialize(userId);
+  }
+
+  return masterAIInstance;
+}
+
+// Direct instance export for backward compatibility
+export const masterAI = masterAIInstance || new MasterAI();
