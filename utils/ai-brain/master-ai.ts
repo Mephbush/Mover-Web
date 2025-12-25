@@ -10,6 +10,8 @@ import { adaptiveIntelligence, AdaptationContext } from './adaptive-intelligence
 import { knowledgeBase, KnowledgeEntry } from './knowledge-base';
 import { codeIntelligence, CodeError, CodeAnalysisResult } from './code-intelligence';
 import { databaseSync } from './database-sync';
+import { SmartTaskExecutor, SmartAction } from '../smart-task-executor';
+import { SmartErrorAnalyzer, ErrorContext } from '../error-handler';
 
 export interface AIContext {
   task: {
@@ -78,6 +80,54 @@ export interface AIPerformance {
 export class MasterAI {
   private executionHistory: Map<string, any[]> = new Map();
   private performanceMetrics: Map<string, AIPerformance> = new Map();
+  private isInitialized = false;
+  private userId: string | null = null;
+
+  /**
+   * Initialize the Master AI with persistence and real browser
+   */
+  async initialize(userId: string): Promise<void> {
+    if (this.isInitialized) return;
+
+    console.log('🧠 Initializing Master AI Brain...');
+
+    this.userId = userId;
+
+    try {
+      // Initialize persistence layer
+      await learningEngine.initialize(userId);
+      await databaseSync.initialize(userId);
+
+      // Initialize real browser automation
+      await SmartTaskExecutor.initializeBrowser();
+
+      this.isInitialized = true;
+      console.log('✅ Master AI Brain initialized with real execution');
+    } catch (error: any) {
+      console.error('❌ Failed to initialize Master AI:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Shutdown the Master AI and cleanup resources
+   */
+  async shutdown(): Promise<void> {
+    console.log('🧠 Shutting down Master AI Brain...');
+
+    try {
+      // Sync any pending data
+      await databaseSync.syncAll();
+
+      // Close browser
+      await SmartTaskExecutor.closeBrowser();
+
+      this.isInitialized = false;
+      console.log('✅ Master AI Brain shutdown complete');
+    } catch (error: any) {
+      console.error('❌ Error during shutdown:', error.message);
+    }
+  }
 
   /**
    * اتخاذ قرار ذكي شامل
@@ -176,7 +226,7 @@ export class MasterAI {
   }
 
   /**
-   * تنفيذ مهمة مع مراقبة ذكية
+   * Execute task with intelligent monitoring
    */
   async executeTask(
     plan: ExecutionPlan,
@@ -188,112 +238,139 @@ export class MasterAI {
     learnings: any[];
     improvements: string[];
   }> {
-    console.log(`🚀 بدء تنفيذ المهمة: ${context.task.id}`);
+    console.log(`🚀 Starting task execution: ${context.task.id}`);
+
+    if (!this.isInitialized) {
+      throw new Error('Master AI not initialized. Call initialize() first.');
+    }
 
     const startTime = Date.now();
     const learnings: any[] = [];
     const improvements: string[] = [];
+    let retryCount = 0;
+    const maxRetries = context.constraints?.resourceLimit?.maxRetries || 3;
 
     try {
-      // تحويل الخطة إلى Goal للمخطط الاستراتيجي
-      const goal: Goal = {
-        id: context.task.id,
-        type: context.task.type as any,
-        description: context.task.goal,
-        target: {
-          website: context.environment.website,
-          url: context.environment.currentUrl,
-        },
-        requirements: {},
-        constraints: context.constraints,
+      // Build smart actions from the plan
+      const actions: SmartAction[] = this.convertPlanToActions(plan, context);
+
+      // Execute actions with intelligent error handling
+      let results: any = {};
+      const errorContext: ErrorContext = {
+        taskType: context.task.type,
+        website: context.environment.website,
+        timestamp: new Date(),
+        retryCount,
       };
 
-      // إعادة إنشاء Plan كامل
-      const fullPlan = await strategicPlanner.createPlan(goal);
+      for (let actionIndex = 0; actionIndex < actions.length; actionIndex++) {
+        const action = actions[actionIndex];
+        let actionSuccess = false;
+        let actionError: any = null;
 
-      // تنفيذ الخطة
-      const result = await strategicPlanner.executePlan(
-        fullPlan,
-        (phase, step, progress) => {
-          onProgress?.({
-            phase,
-            step,
-            progress,
-            timestamp: new Date(),
-          });
+        // Try executing action with retries
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+          try {
+            console.log(`Executing action ${actionIndex + 1}/${actions.length} (attempt ${attempt + 1})`);
 
-          // تسجيل التقدم للتعلم
-          this.recordProgress(context.task.id, { phase, step, progress });
+            const result = await SmartTaskExecutor.executeAction(
+              action,
+              errorContext,
+              context.task.id
+            );
+
+            results[`action_${actionIndex}`] = result;
+            actionSuccess = true;
+            retryCount = attempt;
+
+            // Report progress
+            onProgress?.({
+              actionIndex,
+              totalActions: actions.length,
+              success: true,
+              timestamp: new Date(),
+            });
+
+            break;
+          } catch (error: any) {
+            actionError = error;
+            console.error(`Action failed (attempt ${attempt + 1}/${maxRetries + 1}):`, error.message);
+
+            if (attempt < maxRetries) {
+              // Wait before retry with exponential backoff
+              const delayMs = Math.pow(2, attempt) * 1000;
+              await new Promise((resolve) => setTimeout(resolve, delayMs));
+            }
+          }
         }
-      );
 
-      // تسجيل التجربة للتعلم
+        if (!actionSuccess) {
+          throw actionError || new Error(`Failed to execute action ${actionIndex}`);
+        }
+      }
+
+      // Record learning experience
       const experience: Experience = {
         id: `exp_${Date.now()}`,
         taskType: context.task.type,
         website: context.environment.website,
         action: 'complete_task',
         selector: '',
-        success: result.success,
+        success: true,
         timestamp: new Date(),
         context: {
           url: context.environment.currentUrl,
+          pageStructure: context.environment.pageContext,
         },
         metadata: {
           executionTime: Date.now() - startTime,
-          retryCount: 0,
+          retryCount,
           confidence: plan.confidence,
         },
       };
 
       await learningEngine.recordExperience(experience);
 
-      // تحليل النتائج وتوليد تعلمات
-      if (result.success) {
-        learnings.push({
-          type: 'success',
-          message: 'تم تنفيذ المهمة بنجاح',
-          details: result.statistics,
-        });
+      // Analyze results and generate insights
+      learnings.push({
+        type: 'success',
+        message: 'Task executed successfully',
+        details: {
+          actionsExecuted: actions.length,
+          totalTime: Date.now() - startTime,
+          retriesNeeded: retryCount,
+          confidence: plan.confidence,
+        },
+      });
 
-        improvements.push('استراتيجية التنفيذ كانت فعالة');
-      } else {
-        learnings.push({
-          type: 'failure',
-          message: 'فشل تنفيذ المهمة',
-          errors: result.errors,
-        });
+      improvements.push(
+        'Strategy execution was effective',
+        `Completed with ${retryCount} retries`,
+        'Continue monitoring performance'
+      );
 
-        // تحليل الفشل
-        const failureAnalysis = await learningEngine.analyzeFailures(
-          context.environment.website
-        );
+      // Save learned knowledge
+      await this.saveNewKnowledge(context, results, learnings);
 
-        improvements.push(...failureAnalysis.recommendations);
-      }
-
-      // حفظ المعرفة المكتسبة
-      await this.saveNewKnowledge(context, result, learnings);
-
-      // تحديث مقاييس الأداء
+      // Update performance metrics
       await this.updatePerformanceMetrics(
         context.environment.website,
-        result.success,
+        true,
         Date.now() - startTime
       );
 
-      console.log(`✅ اكتمل التنفيذ: ${result.success ? 'نجح' : 'فشل'}`);
+      console.log(`✅ Task execution completed: success`);
 
       return {
-        success: result.success,
-        results: result.results,
+        success: true,
+        results,
         learnings,
         improvements,
       };
     } catch (error: any) {
-      console.error(`❌ خطأ في التنفيذ:`, error.message);
+      console.error(`❌ Task execution error:`, error.message);
 
-      // تسجيل الفشل للتعلم
+      // Record failure experience
       const experience: Experience = {
         id: `exp_${Date.now()}`,
         taskType: context.task.type,
@@ -305,15 +382,21 @@ export class MasterAI {
         context: {
           url: context.environment.currentUrl,
           errorMessage: error.message,
+          pageStructure: context.environment.pageContext,
         },
         metadata: {
           executionTime: Date.now() - startTime,
-          retryCount: 0,
+          retryCount,
           confidence: plan.confidence,
         },
       };
 
       await learningEngine.recordExperience(experience);
+
+      // Analyze failure
+      const failureAnalysis = await learningEngine.analyzeFailures(
+        context.environment.website
+      );
 
       return {
         success: false,
@@ -324,10 +407,41 @@ export class MasterAI {
             message: error.message,
             stack: error.stack,
           },
+          {
+            type: 'analysis',
+            commonErrors: failureAnalysis.commonErrors,
+          },
         ],
-        improvements: ['مراجعة الاستراتيجية', 'تحسين معالجة الأخطاء'],
+        improvements: failureAnalysis.recommendations,
       };
     }
+  }
+
+  /**
+   * Convert execution plan to smart actions
+   */
+  private convertPlanToActions(plan: ExecutionPlan, context: AIContext): SmartAction[] {
+    const actions: SmartAction[] = [];
+
+    for (const phase of plan.phases) {
+      for (const step of phase.steps || []) {
+        actions.push({
+          type: step.type || 'click',
+          primary: {
+            selector: step.selector,
+            value: step.value,
+            timeout: step.timeout || 30000,
+          },
+          fallbacks: step.fallbacks,
+          errorHandling: {
+            retryCount: 3,
+            ignoreErrors: step.optional || false,
+          },
+        });
+      }
+    }
+
+    return actions;
   }
 
   /**
@@ -1006,5 +1120,21 @@ export class MasterAI {
   }
 }
 
-// مثيل مشترك
-export const masterAI = new MasterAI();
+// Shared instance with lazy initialization
+let masterAIInstance: MasterAI | null = null;
+
+export async function getMasterAI(userId?: string): Promise<MasterAI> {
+  if (!masterAIInstance) {
+    masterAIInstance = new MasterAI();
+  }
+
+  // Initialize if userId provided and not yet initialized
+  if (userId && !masterAIInstance['isInitialized']) {
+    await masterAIInstance.initialize(userId);
+  }
+
+  return masterAIInstance;
+}
+
+// Direct instance export for backward compatibility
+export const masterAI = masterAIInstance || new MasterAI();
