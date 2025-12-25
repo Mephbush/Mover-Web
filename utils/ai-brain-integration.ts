@@ -190,10 +190,14 @@ export class AIBrainIntegration implements AutomationPipeline {
       throw new Error('AI Brain not initialized');
     }
 
+    if (!this.SmartTaskExecutor) {
+      throw new Error('SmartTaskExecutor not initialized');
+    }
+
     console.log('🎯 Executing smart action with AI decision-making');
 
     try {
-      const result = await SmartTaskExecutor.executeAction(
+      const result = await this.SmartTaskExecutor.executeAction(
         action,
         context
       );
