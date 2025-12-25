@@ -282,7 +282,6 @@ export const AIBrain = {
 
 // Export default object للاستيراد السهل
 export default {
-  masterAI,
   learningEngine,
   strategicPlanner,
   adaptiveIntelligence,
