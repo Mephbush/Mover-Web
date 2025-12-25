@@ -116,6 +116,33 @@ export class AIBrainIntegration implements AutomationPipeline {
 
       const taskTime = Date.now() - taskStartTime;
 
+      // Track performance metrics
+      if (this.performanceInitialized) {
+        const experience = {
+          id: task.id,
+          taskType: task.type,
+          website: new URL(task.url).hostname,
+          action: task.type,
+          selector: task.selectors ? Object.keys(task.selectors)[0] : 'unknown',
+          success: result.success,
+          timestamp: new Date(),
+          context: {
+            url: task.url,
+            pageStructure: result.pageStructure,
+            errorMessage: result.error,
+          },
+          metadata: {
+            executionTime: taskTime,
+            retryCount: result.retryCount || 0,
+            confidence: result.confidence || (result.success ? 0.9 : 0.1),
+          },
+        };
+
+        // Update metrics with current experiences
+        const allExperiences = learningEngine.getAllExperiences();
+        await performanceTracker.calculateMetrics(allExperiences);
+      }
+
       console.log();
       console.log('📋 ==========================================');
       console.log(
