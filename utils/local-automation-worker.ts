@@ -351,10 +351,14 @@ export class LocalAutomationWorker {
   private async executeTesting(config: LocalTaskConfig): Promise<any> {
     const { url, timeout } = config;
 
+    if (!this.SmartTaskExecutor) {
+      throw new Error('SmartTaskExecutor not initialized');
+    }
+
     console.log(`🧪 Testing: ${url}`);
 
     // Navigate to URL
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'navigate',
         primary: { value: url, timeout },
@@ -364,7 +368,7 @@ export class LocalAutomationWorker {
     );
 
     // Wait for page to fully load
-    await SmartTaskExecutor.executeAction(
+    await this.SmartTaskExecutor.executeAction(
       {
         type: 'wait',
         primary: { timeout: timeout || 5000 },
@@ -376,7 +380,7 @@ export class LocalAutomationWorker {
     // Take screenshot
     let screenshot: Buffer | null = null;
     if (config.captureScreenshot) {
-      screenshot = await SmartTaskExecutor.executeAction(
+      screenshot = await this.SmartTaskExecutor.executeAction(
         {
           type: 'screenshot',
           primary: {},
