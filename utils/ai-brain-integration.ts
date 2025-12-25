@@ -1,14 +1,18 @@
 /**
  * AI Brain Integration - Complete pipeline for robot automation
  * تكامل عقل الذكاء الاصطناعي - خط أنابيب كامل لأتمتة الروبوت
+ *
+ * WARNING: This module contains Node.js-only components and should not be imported in browser code.
  */
 
 import { getMasterAI } from './ai-brain/master-ai';
 import { getLocalWorker, LocalTaskConfig } from './local-automation-worker';
-import { SmartTaskExecutor } from './smart-task-executor';
 import { learningEngine } from './ai-brain/learning-engine';
 import { databaseSync } from './ai-brain/database-sync';
 import { performanceTracker } from './ai-brain/performance-tracker';
+
+// Type definition for SmartTaskExecutor (actual import is dynamic)
+type SmartTaskExecutor = any;
 
 export interface AutomationPipeline {
   initialize: (userId: string) => Promise<void>;
