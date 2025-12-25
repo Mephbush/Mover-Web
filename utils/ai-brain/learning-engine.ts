@@ -53,6 +53,57 @@ export class LearningEngine {
   private patterns: Map<string, Pattern> = new Map();
   private models: Map<string, LearningModel> = new Map();
   private readonly maxExperiences = 10000;
+  private isInitialized = false;
+
+  /**
+   * Initialize learning engine and load persisted data
+   */
+  async initialize(userId: string): Promise<void> {
+    if (this.isInitialized) return;
+
+    try {
+      console.log('🧠 Initializing LearningEngine with persistence...');
+
+      // Initialize database sync
+      await databaseSync.initialize(userId);
+
+      // Load experiences from database
+      const loadedExperiences = await databaseSync.loadExperiences(undefined, this.maxExperiences);
+      if (loadedExperiences.length > 0) {
+        // Convert database format to Experience format
+        this.experiences = loadedExperiences.map((exp: any) => ({
+          id: exp.experience_id,
+          taskType: exp.task_type,
+          website: exp.website,
+          action: exp.action,
+          selector: exp.selector,
+          success: exp.success,
+          timestamp: new Date(exp.timestamp),
+          context: exp.context,
+          metadata: {
+            executionTime: exp.execution_time,
+            retryCount: exp.retry_count,
+            confidence: exp.confidence,
+          },
+        }));
+
+        // Rebuild patterns from loaded experiences
+        for (const exp of this.experiences) {
+          await this.updatePatterns(exp);
+          await this.updateModel(exp.website, exp);
+        }
+
+        console.log(`✅ Loaded ${this.experiences.length} experiences from database`);
+      }
+
+      this.isInitialized = true;
+      console.log('✅ LearningEngine initialized with persistence');
+    } catch (error: any) {
+      console.warn('⚠️ Failed to initialize with persistence:', error.message);
+      // Continue with empty engine
+      this.isInitialized = true;
+    }
+  }
 
   /**
    * تسجيل تجربة جديدة
