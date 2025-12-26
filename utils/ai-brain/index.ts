@@ -37,6 +37,9 @@ import { knowledgeBase } from './knowledge-base';
 import { codeIntelligence } from './code-intelligence';
 import { databaseSync } from './database-sync';
 
+// NEW: Robot Brain Systems
+import { createRobotBrain, RobotTools, RobotHelpers } from './robot-brain-exports';
+
 /**
  * واجهة موحدة للوصول إلى جميع مكونات عقل AI
  * Unified interface for accessing all AI Brain components (Browser-safe version)
