@@ -224,6 +224,82 @@ export class AdvancedSelectorIntelligence {
   }
 
   /**
+   * استخراج snapshot DOM غني من الصفحة الفعلية باستخدام page.evaluate
+   * يوفر معلومات runtime: computed styles, visibility, actual attributes
+   */
+  async extractDOMSnapshot(
+    page: any,
+    context: SelectorContext
+  ): Promise<{
+    elements: any[];
+    pageMetadata: any;
+  }> {
+    try {
+      const snapshot = await page.evaluate(() => {
+        const elements: any[] = [];
+
+        // اجمع معلومات جميع العناصر التفاعلية
+        document.querySelectorAll('button, input, a, [role="button"], [data-testid], [aria-label]')
+          .forEach((el) => {
+            const rect = el.getBoundingClientRect();
+            const computed = window.getComputedStyle(el);
+
+            elements.push({
+              tagName: el.tagName,
+              type: (el as any).type || null,
+              id: el.id || null,
+              className: el.className || null,
+              textContent: el.textContent?.trim().substring(0, 100) || null,
+              ariaLabel: el.getAttribute('aria-label'),
+              dataTestId: el.getAttribute('data-testid'),
+              role: el.getAttribute('role'),
+              placeholder: (el as any).placeholder || null,
+              // Runtime attributes
+              isVisible: rect.width > 0 && rect.height > 0 && computed.visibility !== 'hidden' && computed.display !== 'none',
+              isDisabled: (el as any).disabled || false,
+              isClickable: !((el as any).disabled),
+              offsetHeight: rect.height,
+              offsetWidth: rect.width,
+              // Parent info
+              parentTagName: el.parentElement?.tagName || null,
+              parentClasses: el.parentElement?.className || null,
+              // Data attributes
+              dataAttributes: Array.from(el.attributes)
+                .filter(attr => attr.name.startsWith('data-'))
+                .map(attr => ({ name: attr.name, value: attr.value })),
+            });
+          });
+
+        return {
+          elements,
+          pageUrl: window.location.href,
+          pageTitle: document.title,
+          domReady: document.readyState === 'complete',
+        };
+      });
+
+      if (this.errorLogger) {
+        this.errorLogger.logInfo('DOM snapshot extracted successfully', {
+          elementCount: snapshot.elements.length,
+          pageUrl: snapshot.pageUrl,
+        });
+      }
+
+      return snapshot;
+    } catch (error: any) {
+      if (this.errorLogger) {
+        this.errorLogger.logError({
+          category: 'dom_extraction',
+          severity: 'warning',
+          message: `Failed to extract DOM snapshot: ${error.message}`,
+          context: { elementType: context.elementType },
+        } as any);
+      }
+      return { elements: [], pageMetadata: {} };
+    }
+  }
+
+  /**
    * توليد محددات من محتوى الصفحة
    */
   private generateSelectorsFromContent(
