@@ -113,7 +113,7 @@ class MultiLayerFastFinder {
     for (const selector of selectors) {
       try {
         const element = page.locator(selector).first();
-        if (await this.isValid(element)) {
+        if (await this.isValid(element, page)) {
           return {
             found: true,
             selector,
@@ -124,7 +124,9 @@ class MultiLayerFastFinder {
             alternatives: selectors.filter(s => s !== selector).slice(0, 3),
           };
         }
-      } catch {}
+      } catch (error: any) {
+        console.debug(`Layer 2 search for selector ${selector} failed: ${error.message}`);
+      }
     }
 
     return null;
