@@ -48,6 +48,9 @@ export interface ExecutionResult {
   recoveryUsed: boolean;
   finalErrorType?: string;
   learnings: string[];
+  realBrowserAttempt?: boolean; // تم الاختبار مع متصفح حقيقي
+  foundElement?: any; // العنصر الفعلي المكتشف
+  confidence?: number; // ثقة النتيجة
 }
 
 /**
