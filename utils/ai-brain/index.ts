@@ -27,6 +27,11 @@ export * from './unified-robot-brain-core';
 // NEW: Robot Brain unified exports
 export * from './robot-brain-exports';
 
+// NEW: Event-Driven & Adaptive Systems
+export * from './event-driven-robot-brain';
+export * from './adaptive-learning-engine';
+export * from './ultimate-robot-brain';
+
 // NOTE: master-ai is Node.js-only and should not be exported here
 // Import it only from server-side code using:
 // import { getMasterAI } from '@/utils/ai-brain/master-ai'
