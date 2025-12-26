@@ -25,7 +25,9 @@ async function initializePlaywright() {
     // Only load in Node.js environments
     if (typeof window === 'undefined') {
       try {
-        const playwright = await import('playwright');
+        // Use computed module name to hide from Vite's static analyzer
+        const moduleName = 'playwrig' + 'ht';
+        const playwright = await import(moduleName);
         chromium = (playwright as any).default?.chromium || (playwright as any).chromium;
         Browser = (playwright as any).default?.Browser || (playwright as any).Browser;
         BrowserContext = (playwright as any).default?.BrowserContext || (playwright as any).BrowserContext;
