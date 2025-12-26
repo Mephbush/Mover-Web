@@ -51,6 +51,13 @@ export const AIBrain = {
   knowledge: knowledgeBase,
   codeIntel: codeIntelligence,
   database: databaseSync,
+
+  // NEW: Robot Brain Systems
+  robot: {
+    create: createRobotBrain,
+    tools: RobotTools,
+    helpers: RobotHelpers,
+  },
   
   /**
    * تهيئة النظام الكامل
