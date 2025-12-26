@@ -40,7 +40,7 @@ class MultiLayerFastFinder {
     if (hints.id) {
       try {
         const element = page.locator(`#${hints.id}`).first();
-        if (await this.isValid(element)) {
+        if (await this.isValid(element, page)) {
           return {
             found: true,
             selector: `#${hints.id}`,
@@ -51,14 +51,16 @@ class MultiLayerFastFinder {
             alternatives: [],
           };
         }
-      } catch {}
+      } catch (error: any) {
+        console.debug(`Layer 1 ID search failed: ${error.message}`);
+      }
     }
 
     // جرب data-testid (سريع جداً)
     if (hints.dataTestId) {
       try {
         const element = page.locator(`[data-testid="${hints.dataTestId}"]`).first();
-        if (await this.isValid(element)) {
+        if (await this.isValid(element, page)) {
           return {
             found: true,
             selector: `[data-testid="${hints.dataTestId}"]`,
@@ -69,14 +71,16 @@ class MultiLayerFastFinder {
             alternatives: [],
           };
         }
-      } catch {}
+      } catch (error: any) {
+        console.debug(`Layer 1 data-testid search failed: ${error.message}`);
+      }
     }
 
     // جرب aria-label (سريع جداً)
     if (hints.ariaLabel) {
       try {
         const element = page.locator(`[aria-label="${hints.ariaLabel}"]`).first();
-        if (await this.isValid(element)) {
+        if (await this.isValid(element, page)) {
           return {
             found: true,
             selector: `[aria-label="${hints.ariaLabel}"]`,
@@ -87,7 +91,9 @@ class MultiLayerFastFinder {
             alternatives: [],
           };
         }
-      } catch {}
+      } catch (error: any) {
+        console.debug(`Layer 1 aria-label search failed: ${error.message}`);
+      }
     }
 
     return null;
