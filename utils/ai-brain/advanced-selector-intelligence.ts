@@ -415,6 +415,14 @@ export class AdvancedSelectorIntelligence {
     ];
 
     allElements.forEach((element) => {
+      // حساب معدل الموثوقية بناءً على مصدر العنصر
+      const isShadowDOM = element.domType === 'shadow';
+      const isIframe = element.domType === 'iframe';
+      const domSourceTag = isShadowDOM ? 'shadow-dom' : isIframe ? 'iframe' : 'regular-dom';
+
+      // Adjust confidence for elements from complex DOM structures
+      const domComplexityFactor = isShadowDOM ? 0.85 : isIframe ? 0.8 : 1.0;
+
       // 1. استخدم data-testid إن وجد
       if (element.dataTestId && !seenSelectors.has(`[data-testid="${element.dataTestId}"]`)) {
         const selector = `[data-testid="${element.dataTestId}"]`;
@@ -422,20 +430,20 @@ export class AdvancedSelectorIntelligence {
         candidates.push({
           selector,
           type: 'data-testid',
-          score: element.isVisible ? 0.95 : 0.75, // اعلى اذا كان مرئي
-          confidence: 0.9,
-          reliability: 0.88,
+          score: (element.isVisible ? 0.95 : 0.75) * domComplexityFactor,
+          confidence: 0.9 * domComplexityFactor,
+          reliability: 0.88 * domComplexityFactor,
           specificity: 0.98,
-          robustness: 0.95,
-          estimatedWaitTime: 300,
-          fallbackLevel: 0,
+          robustness: 0.95 * domComplexityFactor,
+          estimatedWaitTime: isShadowDOM ? 400 : isIframe ? 600 : 300,
+          fallbackLevel: isIframe ? 2 : isShadowDOM ? 1 : 0,
           metadata: {
-            weight: 110,
+            weight: isIframe ? 85 : isShadowDOM ? 100 : 110,
             occurrences: 1,
             lastUsed: new Date(),
             successCount: 0,
             failureCount: 0,
-            tags: ['data-testid', 'runtime-extracted', context.elementType],
+            tags: ['data-testid', 'runtime-extracted', domSourceTag, context.elementType],
           },
         });
       }
