@@ -628,7 +628,77 @@ export class AdvancedSelectorIntelligence {
   }
 
   /**
-   * توليد محددات من Attributes
+   * فحص إذا كانت اسم class مولدة بواسطة bundler (hashed)
+   * أمثلة: _header__1a2b, styles__container--3c4d
+   */
+  private isHashedClassName(className: string): boolean {
+    // أنماط شهيرة للأسماء المولدة
+    const hashedPatterns = [
+      /^[a-z0-9]{6,}__/i, // CSS Modules (file__name)
+      /^_[a-z0-9]+$/i, // styled-components
+      /^[a-z0-9]{8,}$/i, // Random hash-like names
+      /^[A-Z][a-z]+-[a-z0-9]{6,}$/i, // BEM with hash
+    ];
+    return hashedPatterns.some(pattern => pattern.test(className));
+  }
+
+  /**
+   * تحسين اسم class بإزالة الأجزاء المولدة والاحتفاظ بالأجزاء المعنية
+   */
+  private normalizeClassName(className: string): string[] {
+    // إذا كان مولداً، حاول استخراج الجزء المفيد
+    if (this.isHashedClassName(className)) {
+      // استخرج الكلمات المعنية
+      const meaningful = className.split(/[-_]/)
+        .filter(part => /[a-zA-Z]/.test(part) && part.length > 2);
+      return meaningful.length > 0 ? meaningful : [className];
+    }
+
+    return [className];
+  }
+
+  /**
+   * استخراج وترتيب attributes data-* بناءً على الأهمية
+   */
+  private extractAndPrioritizeDataAttributes(pageContent: string, context: SelectorContext): Array<{attr: string, value: string, importance: number}> {
+    const dataAttrs: Array<{attr: string, value: string, importance: number}> = [];
+
+    // البحث عن جميع data-* attributes
+    const dataMatches = pageContent.match(/data-[\w-]+=["']([^"']*)/gi) || [];
+
+    const priorityPatterns = {
+      'data-testid': 100, // الأعلى أولوية
+      'data-test-id': 100,
+      'data-qa': 95,
+      'data-cy': 90, // Cypress
+      'data-e2e': 90,
+      'data-automation': 85,
+      'data-test': 80,
+      'data-id': 75,
+      'data-name': 70,
+      'data-role': 65,
+      'data-label': 60,
+    };
+
+    dataMatches.forEach((match) => {
+      const attrMatch = match.match(/data-([\w-]+)=["']([^"']*)/);
+      if (attrMatch) {
+        const fullAttr = `data-${attrMatch[1]}`;
+        const value = attrMatch[2];
+        const importance = priorityPatterns[fullAttr as keyof typeof priorityPatterns] || 40;
+
+        if (value && this.matchesContext(value, context)) {
+          dataAttrs.push({ attr: fullAttr, value, importance });
+        }
+      }
+    });
+
+    // ترتيب حسب الأهمية
+    return dataAttrs.sort((a, b) => b.importance - a.importance);
+  }
+
+  /**
+   * توليد محددات من Attributes (محسّنة)
    */
   private generateFromAttributes(
     pageContent: string,
@@ -658,37 +728,100 @@ export class AdvancedSelectorIntelligence {
               lastUsed: new Date(),
               successCount: 0,
               failureCount: 0,
-              tags: ['id', context.elementType],
+              tags: ['id', 'stable', context.elementType],
             },
           });
         }
       });
     }
 
-    // البحث عن Class attributes
+    // البحث عن data-* attributes (ذو أولوية عالية)
+    const prioritizedDataAttrs = this.extractAndPrioritizeDataAttributes(pageContent, context);
+    prioritizedDataAttrs.slice(0, 5).forEach(({attr, value, importance}) => {
+      const selector = `[${attr}="${value}"]`;
+      const baseScore = Math.min(0.95, (importance / 100) * 0.9);
+
+      candidates.push({
+        selector,
+        type: 'data-testid',
+        score: baseScore,
+        confidence: baseScore * 0.95,
+        reliability: baseScore * 0.92,
+        specificity: 0.96,
+        robustness: baseScore * 0.93,
+        estimatedWaitTime: 400,
+        fallbackLevel: 0,
+        metadata: {
+          weight: Math.round(importance),
+          occurrences: 1,
+          lastUsed: new Date(),
+          successCount: 0,
+          failureCount: 0,
+          tags: [`${attr}`, 'data-attribute', 'high-priority', context.elementType],
+        },
+      });
+    });
+
+    // البحث عن Class attributes (مع تطبيع)
     const classMatches = pageContent.match(/class=["']([^"']*)/gi);
     if (classMatches) {
+      const processedClasses = new Set<string>();
+
       classMatches.forEach((match) => {
-        const classes = match.replace(/class=["']/, '').split(' ');
+        const classStr = match.replace(/class=["']/, '');
+        const classes = classStr.split(' ');
+
         classes.forEach((cls) => {
-          if (this.matchesContext(cls, context)) {
+          if (processedClasses.has(cls) || !cls.trim()) return;
+
+          // فلتر: تخطي الأسماء المولدة
+          if (this.isHashedClassName(cls)) {
+            // حاول استخراج الأجزاء المعنية
+            const meaningful = this.normalizeClassName(cls);
+            meaningful.forEach((mcls) => {
+              if (this.matchesContext(mcls, context) && !processedClasses.has(mcls)) {
+                processedClasses.add(mcls);
+                candidates.push({
+                  selector: `.${mcls}`,
+                  type: 'class',
+                  score: 0.65, // أقل لأنها مستخرجة من hashed
+                  confidence: 0.60,
+                  reliability: 0.55,
+                  specificity: 0.55,
+                  robustness: 0.50,
+                  estimatedWaitTime: 800,
+                  fallbackLevel: 2,
+                  metadata: {
+                    weight: 50,
+                    occurrences: 1,
+                    lastUsed: new Date(),
+                    successCount: 0,
+                    failureCount: 0,
+                    tags: ['class', 'extracted-from-hash', context.elementType],
+                  },
+                });
+              }
+            });
+          } else if (this.matchesContext(cls, context)) {
+            // أسماء معتادة (stable)
+            processedClasses.add(cls);
             candidates.push({
               selector: `.${cls}`,
               type: 'class',
-              score: 0.75,
-              confidence: 0.7,
-              reliability: 0.65,
-              specificity: 0.6,
-              robustness: 0.65,
-              estimatedWaitTime: 600,
+              score: 0.80,
+              confidence: 0.75,
+              reliability: 0.70,
+              specificity: 0.70,
+              robustness: 0.75,
+              estimatedWaitTime: 500,
               fallbackLevel: 1,
               metadata: {
-                weight: 70,
+                weight: 80,
                 occurrences: 1,
                 lastUsed: new Date(),
                 successCount: 0,
                 failureCount: 0,
-                tags: ['class', context.elementType],
+                tags: ['class', 'stable', 'human-readable', context.elementType],
               },
             });
           }
