@@ -300,7 +300,124 @@ export class AdvancedSelectorIntelligence {
   }
 
   /**
-   * توليد محددات من محتوى الصفحة
+   * توليد محددات من DOM snapshot حقيقي (أسلوب محسّن)
+   */
+  private generateSelectorsFromDOMSnapshot(
+    snapshot: { elements: any[] },
+    context: SelectorContext
+  ): SelectorCandidate[] {
+    const candidates: SelectorCandidate[] = [];
+    const seenSelectors = new Set<string>();
+
+    snapshot.elements.forEach((element) => {
+      // 1. استخدم data-testid إن وجد
+      if (element.dataTestId && !seenSelectors.has(`[data-testid="${element.dataTestId}"]`)) {
+        const selector = `[data-testid="${element.dataTestId}"]`;
+        seenSelectors.add(selector);
+        candidates.push({
+          selector,
+          type: 'data-testid',
+          score: element.isVisible ? 0.95 : 0.75, // اعلى اذا كان مرئي
+          confidence: 0.9,
+          reliability: 0.88,
+          specificity: 0.98,
+          robustness: 0.95,
+          estimatedWaitTime: 300,
+          fallbackLevel: 0,
+          metadata: {
+            weight: 110,
+            occurrences: 1,
+            lastUsed: new Date(),
+            successCount: 0,
+            failureCount: 0,
+            tags: ['data-testid', 'runtime-extracted', context.elementType],
+          },
+        });
+      }
+
+      // 2. استخدم aria-label إن وجد وكان مناسباً
+      if (element.ariaLabel && !seenSelectors.has(`[aria-label="${element.ariaLabel}"]`)) {
+        const selector = `[aria-label="${element.ariaLabel}"]`;
+        seenSelectors.add(selector);
+        candidates.push({
+          selector,
+          type: 'aria-label',
+          score: element.isVisible ? 0.9 : 0.7,
+          confidence: 0.85,
+          reliability: 0.82,
+          specificity: 0.92,
+          robustness: 0.88,
+          estimatedWaitTime: 400,
+          fallbackLevel: 1,
+          metadata: {
+            weight: 95,
+            occurrences: 1,
+            lastUsed: new Date(),
+            successCount: 0,
+            failureCount: 0,
+            tags: ['aria-label', 'runtime-extracted', context.elementType],
+          },
+        });
+      }
+
+      // 3. استخدم ID إن وجد
+      if (element.id && !seenSelectors.has(`#${element.id}`)) {
+        const selector = `#${element.id}`;
+        seenSelectors.add(selector);
+        candidates.push({
+          selector,
+          type: 'id',
+          score: element.isVisible ? 0.98 : 0.85,
+          confidence: 0.95,
+          reliability: 0.92,
+          specificity: 1.0,
+          robustness: 0.98,
+          estimatedWaitTime: 250,
+          fallbackLevel: 0,
+          metadata: {
+            weight: 120,
+            occurrences: 1,
+            lastUsed: new Date(),
+            successCount: 0,
+            failureCount: 0,
+            tags: ['id', 'runtime-extracted', context.elementType],
+          },
+        });
+      }
+
+      // 4. استخدم role attribute مع aria-label
+      if (element.role && element.ariaLabel) {
+        const selector = `[role="${element.role}"][aria-label="${element.ariaLabel}"]`;
+        if (!seenSelectors.has(selector)) {
+          seenSelectors.add(selector);
+          candidates.push({
+            selector,
+            type: 'hybrid',
+            score: element.isVisible ? 0.88 : 0.68,
+            confidence: 0.83,
+            reliability: 0.80,
+            specificity: 0.95,
+            robustness: 0.85,
+            estimatedWaitTime: 500,
+            fallbackLevel: 1,
+            metadata: {
+              weight: 85,
+              occurrences: 1,
+              lastUsed: new Date(),
+              successCount: 0,
+              failureCount: 0,
+              tags: ['hybrid', 'role+aria', context.elementType],
+            },
+          });
+        }
+      }
+    });
+
+    return candidates;
+  }
+
+  /**
+   * توليد محددات من محتوى الصفحة (fallback من regex للتوافقية)
    */
   private generateSelectorsFromContent(
     pageContent: string,
@@ -318,20 +435,20 @@ export class AdvancedSelectorIntelligence {
         candidates.push({
           selector: `[data-testid="${testId}"]`,
           type: 'data-testid',
-          score: 0.9,
-          confidence: 0.85,
-          reliability: 0.8,
-          specificity: 0.95,
-          robustness: 0.9,
+          score: 0.85,
+          confidence: 0.80,
+          reliability: 0.75,
+          specificity: 0.92,
+          robustness: 0.87,
           estimatedWaitTime: 500,
-          fallbackLevel: 0,
+          fallbackLevel: 1,
           metadata: {
-            weight: 100,
+            weight: 90,
             occurrences: 1,
             lastUsed: new Date(),
             successCount: 0,
             failureCount: 0,
-            tags: ['data-testid', context.elementType],
+            tags: ['data-testid', 'regex-extracted', context.elementType],
           },
         });
       });
