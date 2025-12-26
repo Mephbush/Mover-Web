@@ -24,6 +24,8 @@ export interface FastFindResult {
  * نظام البحث متعدد الطبقات السريع
  */
 class MultiLayerFastFinder {
+  private errorLogger = getErrorLogger();
+
   /**
    * الطبقة 1: البحث الفوري (أسرع)
    */
