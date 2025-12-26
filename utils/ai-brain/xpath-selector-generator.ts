@@ -415,6 +415,9 @@ export class XPathSelectorGenerator {
 
     // If it contains both, use concat function
     const parts = str.split("'");
-    return `concat('${parts.join("', \"'\", '"')}')`;
+    const joined = parts
+      .map((part, i) => (i === 0 ? `'${part}'` : `"'",'${part}'`))
+      .join(',');
+    return `concat(${joined})`;
   }
 }
