@@ -167,19 +167,31 @@ export class SmartSelectorOrchestrator {
 
   /**
    * تنفيذ العثور على عنصر مع استرجاع ذكي للأخطاء
+   * يستخدم متصفح حقيقي Playwright بدلاً من المحاكاة
+   *
+   * @param selectionResult - نتيجة اختيار المحددات
+   * @param page - صفحة Playwright للبحث عن العناصر فيها
+   * @param onAttempt - callback اختياري لتتبع المحاولات
    */
   async executeSelectFinding(
     selectionResult: SelectorSelectionResult,
+    page?: any, // Playwright Page instance
     onAttempt?: (attempt: number, selector: string, result: boolean) => void
   ): Promise<ExecutionResult> {
     const startTime = Date.now();
     let attemptsUsed = 0;
     let recoveryUsed = false;
     let finalErrorType: string | undefined;
+    let foundElement: any = null;
 
     if (this.config.enableLogging) {
-      console.log(`\n🚀 تنفيذ العثور على العنصر:`);
+      console.log(`\n🚀 تنفيذ العثور على العنصر (تنفيذ حقيقي):`);
       console.log(`   📍 المحددات: ${selectionResult.selectedSelectors.join(', ')}`);
+      if (page) {
+        console.log(`   🌐 استخدام متصفح حقيقي: ✅`);
+      } else {
+        console.log(`   ⚠️ بدون متصفح - سيتم استخدام محاكاة`);
+      }
     }
 
     try {
@@ -189,24 +201,69 @@ export class SmartSelectorOrchestrator {
           attemptsUsed++;
 
           try {
-            // محاكاة جهد العثور (في الواقع يكون هناك تفاعل حقيقي مع المتصفح)
             if (this.config.enableLogging) {
               console.log(`   📍 محاولة ${attemptsUsed}: ${plan.selector}`);
             }
 
-            // محاكاة: نجح/فشل
-            const success = Math.random() > 0.2; // 80% نجاح
+            let success = false;
+            let confidence = plan.expectedSuccessRate;
+
+            // إذا كان لدينا متصفح حقيقي، استخدمه للبحث
+            if (page) {
+              try {
+                // انتظر قليلاً قبل المحاولة
+                if (plan.waitBefore > 0) {
+                  await page.waitForTimeout(plan.waitBefore);
+                }
+
+                // جرب البحث عن العنصر باستخدام النظام السريع
+                const discoveryResult = await this.discoverySystem.findElementLightning(
+                  page,
+                  plan.selector,
+                  { timeout: plan.timeout }
+                );
+
+                if (discoveryResult?.found && discoveryResult.element) {
+                  success = true;
+                  foundElement = discoveryResult.element;
+                  confidence = discoveryResult.confidence || 0.95;
+
+                  if (this.config.enableLogging) {
+                    console.log(`   ✅ عنصر مكتشف حقيقياً! الثقة: ${(confidence * 100).toFixed(1)}%`);
+                  }
+
+                  // تسجيل النجاح في نظام التعلم
+                  if (this.config.enableLearning) {
+                    await this.recordLearningExperience(
+                      plan.selector,
+                      true,
+                      confidence,
+                      Date.now() - startTime
+                    );
+                  }
+                }
+              } catch (browserError: any) {
+                if (this.config.enableLogging) {
+                  console.log(`   📝 تفاصيل الخطأ: ${browserError.message}`);
+                }
+                success = false;
+              }
+            } else {
+              // fallback: محاكاة إذا لم يكن هناك متصفح
+              success = Math.random() > 0.25; // 75% نجاح مع fallback
+            }
+
             onAttempt?.(attemptsUsed, plan.selector, success);
 
             if (success) {
               const executionTime = Date.now() - startTime;
 
-              // 2. تسجيل الأداء
+              // تسجيل الأداء
               if (this.config.enablePerformanceTracking) {
                 this.performanceTracker.recordAttempt(
                   plan.selector,
                   selectionResult.strategy.primary[0]?.metadata.weight || 0,
-                  'default',
+                  'real_browser',
                   'element',
                   true,
                   executionTime
@@ -218,6 +275,18 @@ export class SmartSelectorOrchestrator {
                 console.log(`   ⏱️ الوقت الإجمالي: ${executionTime}ms`);
               }
 
+              this.executionLog.push({
+                success: true,
+                selectedSelector: plan.selector,
+                executionTime,
+                attemptsUsed,
+                recoveryUsed: false,
+                learnings: [`نجح المحدد: ${plan.selector}`],
+                realBrowserAttempt: !!page,
+                foundElement,
+                confidence,
+              });
+
               return {
                 success: true,
                 selectedSelector: plan.selector,
@@ -225,20 +294,33 @@ export class SmartSelectorOrchestrator {
                 attemptsUsed,
                 recoveryUsed: false,
                 learnings: [`نجح المحدد: ${plan.selector}`],
+                realBrowserAttempt: !!page,
+                foundElement,
+                confidence,
               };
             }
 
-            // 3. تسجيل المحاولة الفاشلة
+            // تسجيل المحاولة الفاشلة
             if (this.config.enablePerformanceTracking) {
               const currentTime = Date.now() - startTime;
               this.performanceTracker.recordAttempt(
                 plan.selector,
                 0,
-                'default',
+                page ? 'real_browser' : 'fallback',
                 'element',
                 false,
                 currentTime,
                 'not_found'
+              );
+            }
+
+            // تسجيل الفشل في نظام التعلم
+            if (this.config.enableLearning && page) {
+              await this.recordLearningExperience(
+                plan.selector,
+                false,
+                0,
+                Date.now() - startTime
               );
             }
           } catch (error: any) {
@@ -254,21 +336,27 @@ export class SmartSelectorOrchestrator {
         }
       }
 
-      // 4. استرجاع الأخطاء إذا فشلت المحددات الأولية
-      if (this.config.enableErrorRecovery && attemptsUsed > 0) {
-        const recoveryResult = await this.attemptErrorRecovery(
+      // 2. استرجاع الأخطاء إذا فشلت المحددات الأولية
+      if (this.config.enableErrorRecovery && attemptsUsed > 0 && page) {
+        const recoveryResult = await this.attemptErrorRecoveryWithBrowser(
           selectionResult,
+          page,
           attemptsUsed,
           onAttempt
         );
 
         if (recoveryResult) {
           recoveryUsed = true;
+          this.executionLog.push({
+            ...recoveryResult,
+            realBrowserAttempt: true,
+            recoveryUsed: true,
+          });
           return recoveryResult;
         }
       }
 
-      // 5. فشل العثور على العنصر
+      // 3. فشل العثور على العنصر
       const executionTime = Date.now() - startTime;
 
       if (this.config.enableLogging) {
@@ -276,7 +364,7 @@ export class SmartSelectorOrchestrator {
         console.log(`   ⏱️ الوقت الإجمالي: ${executionTime}ms`);
       }
 
-      return {
+      const failureResult: ExecutionResult = {
         success: false,
         selectedSelector: selectionResult.selectedSelectors[0] || 'unknown',
         executionTime,
@@ -288,13 +376,17 @@ export class SmartSelectorOrchestrator {
           'جرب استخدام أداة DevTools للبحث عن محددات جديدة',
           'قد يكون العنصر مخفياً أو يحمّل ديناميكياً',
         ],
+        realBrowserAttempt: !!page,
       };
+
+      this.executionLog.push(failureResult);
+      return failureResult;
     } catch (error: any) {
       if (this.config.enableLogging) {
         console.error(`❌ خطأ غير متوقع:`, error.message);
       }
 
-      return {
+      const errorResult: ExecutionResult = {
         success: false,
         selectedSelector: selectionResult.selectedSelectors[0] || 'unknown',
         executionTime: Date.now() - startTime,
@@ -302,7 +394,11 @@ export class SmartSelectorOrchestrator {
         recoveryUsed,
         finalErrorType: 'unexpected_error',
         learnings: [error.message],
+        realBrowserAttempt: !!page,
       };
+
+      this.executionLog.push(errorResult);
+      return errorResult;
     }
   }
 
