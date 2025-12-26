@@ -1,10 +1,12 @@
 /**
  * نظام البحث السريع جداً عن العناصر
  * Lightning Fast Element Discovery System
- * 
+ *
  * أسرع وأقوى نظام بحث في المشروع
  * سرعة فائقة + ذكاء عميق = نتائج مثالية
  */
+
+import { EnhancedElementValidator, ElementValidationResult } from './enhanced-element-validator';
 
 export interface FastFindResult {
   found: boolean;
@@ -14,6 +16,7 @@ export interface FastFindResult {
   timeMs: number;
   method: string;
   alternatives: string[];
+  validation?: ElementValidationResult;
 }
 
 /**
