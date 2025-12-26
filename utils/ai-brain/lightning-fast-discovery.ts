@@ -7,6 +7,7 @@
  */
 
 import { EnhancedElementValidator, ElementValidationResult } from './enhanced-element-validator';
+import { getErrorLogger, ErrorCategory, ErrorSeverity } from './error-telemetry-system';
 
 export interface FastFindResult {
   found: boolean;
