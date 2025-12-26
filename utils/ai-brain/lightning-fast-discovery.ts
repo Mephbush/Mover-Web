@@ -132,6 +132,10 @@ class MultiLayerFastFinder {
       try {
         const element = page.locator(selector).first();
         if (await this.isValid(element, page)) {
+          this.errorLogger.recordExecutionTime('layer2_search', Date.now() - startTime, true, {
+            selector,
+            elementType,
+          });
           return {
             found: true,
             selector,
@@ -143,9 +147,19 @@ class MultiLayerFastFinder {
           };
         }
       } catch (error: any) {
-        console.debug(`Layer 2 search for selector ${selector} failed: ${error.message}`);
+        this.errorLogger.logSelectorError(
+          selector,
+          error.message,
+          elementType,
+          { layer: 2, method: 'directed_search' }
+        );
       }
     }
+
+    this.errorLogger.recordExecutionTime('layer2_search', Date.now() - startTime, false, {
+      elementType,
+      attemptCount: selectors.length,
+    });
 
     return null;
   }
