@@ -403,16 +403,19 @@ export class SmartSelectorOrchestrator {
   }
 
   /**
-   * محاولة استرجاع الخطأ
+   * محاولة استرجاع الخطأ مع متصفح حقيقي
    */
-  private async attemptErrorRecovery(
+  private async attemptErrorRecoveryWithBrowser(
     selectionResult: SelectorSelectionResult,
+    page: any,
     attemptsUsed: number,
     onAttempt?: (attempt: number, selector: string, result: boolean) => void
   ): Promise<ExecutionResult | null> {
     if (this.config.enableLogging) {
-      console.log(`\n🔧 بدء محاولات استرجاع الخطأ...`);
+      console.log(`\n🔧 بدء محاولات استرجاع الخطأ مع متصفح حقيقي...`);
     }
+
+    const startTime = Date.now();
 
     try {
       // 1. تحليل الخطأ واقتراح استراتيجيات الاسترجاع
@@ -434,7 +437,7 @@ export class SmartSelectorOrchestrator {
         console.log(`   🎯 الاستراتيجية المختارة: ${recoveryStrategy.selectedStrategy.description}`);
       }
 
-      // 2. محاولة الاستراتيجيات
+      // 2. محاولة الاستراتيجيات مع المتصفح الحقيقي
       for (const strategy of recoveryStrategy.strategies.slice(0, 3)) {
         for (const selector of strategy.newSelectors) {
           attemptsUsed++;
@@ -444,15 +447,30 @@ export class SmartSelectorOrchestrator {
           }
 
           try {
-            // محاكاة محاولة الاسترجاع
-            const success = Math.random() > 0.4; // 60% نجاح في الاسترجاع
-            onAttempt?.(attemptsUsed, selector, success);
+            // انتظر قليلاً قبل إعادة المحاولة
+            await page.waitForTimeout(strategy.delayMs || 500);
 
-            if (success) {
-              const executionTime = Date.now() - Date.now(); // simplified
+            // جرب البحث عن العنصر باستخدام النظام السريع
+            const discoveryResult = await this.discoverySystem.findElementLightning(
+              page,
+              selector,
+              { timeout: strategy.timeout || 5000 }
+            );
+
+            if (discoveryResult?.found && discoveryResult.element) {
+              const success = true;
+              const confidence = discoveryResult.confidence || 0.9;
+              const executionTime = Date.now() - startTime;
+
+              onAttempt?.(attemptsUsed, selector, success);
 
               if (this.config.enableLogging) {
-                console.log(`   ✅ نجحت محاولة الاسترجاع`);
+                console.log(`   ✅ نجحت محاولة الاسترجاع! الثقة: ${(confidence * 100).toFixed(1)}%`);
+              }
+
+              // تسجيل النجاح في نظام التعلم
+              if (this.config.enableLearning) {
+                await this.recordLearningExperience(selector, true, confidence, executionTime);
               }
 
               return {
@@ -466,13 +484,24 @@ export class SmartSelectorOrchestrator {
                   `المحدد الجديد: ${selector}`,
                   `الاستراتيجية: ${strategy.description}`,
                 ],
+                realBrowserAttempt: true,
+                foundElement: discoveryResult.element,
+                confidence,
               };
+            }
+
+            onAttempt?.(attemptsUsed, selector, false);
+
+            // تسجيل الفشل
+            if (this.config.enableLearning) {
+              await this.recordLearningExperience(selector, false, 0, Date.now() - startTime);
             }
 
             if (attemptsUsed >= this.config.maxRetries) {
               break;
             }
           } catch (error: any) {
+            onAttempt?.(attemptsUsed, selector, false);
             if (this.config.enableLogging) {
               console.error(`   ❌ فشلت محاولة الاسترجاع:`, error.message);
             }
@@ -490,6 +519,27 @@ export class SmartSelectorOrchestrator {
         console.error(`❌ خطأ في استراتيجية الاسترجاع:`, error.message);
       }
       return null;
+    }
+  }
+
+  /**
+   * تسجيل تجربة التعلم
+   */
+  private async recordLearningExperience(
+    selector: string,
+    success: boolean,
+    confidence: number,
+    executionTime: number
+  ): Promise<void> {
+    try {
+      // سيتم توصيل هذا مع نظام قاعدة البيانات لاحقاً
+      if (this.config.enableLogging) {
+        console.log(`   📚 تم تسجيل التجربة: ${selector} - ${success ? '✅' : '❌'}`);
+      }
+    } catch (error: any) {
+      if (this.config.enableLogging) {
+        console.error(`   ⚠️ خطأ في تسجيل التجربة:`, error.message);
+      }
     }
   }
 
