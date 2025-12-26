@@ -506,20 +506,20 @@ export class AdvancedSelectorIntelligence {
           candidates.push({
             selector,
             type: 'hybrid',
-            score: element.isVisible ? 0.88 : 0.68,
-            confidence: 0.83,
-            reliability: 0.80,
+            score: (element.isVisible ? 0.88 : 0.68) * domComplexityFactor,
+            confidence: 0.83 * domComplexityFactor,
+            reliability: 0.80 * domComplexityFactor,
             specificity: 0.95,
-            robustness: 0.85,
-            estimatedWaitTime: 500,
-            fallbackLevel: 1,
+            robustness: 0.85 * domComplexityFactor,
+            estimatedWaitTime: isShadowDOM ? 600 : isIframe ? 800 : 500,
+            fallbackLevel: isIframe ? 2 : isShadowDOM ? 1 : 1,
             metadata: {
-              weight: 85,
+              weight: isIframe ? 60 : isShadowDOM ? 75 : 85,
               occurrences: 1,
               lastUsed: new Date(),
               successCount: 0,
               failureCount: 0,
-              tags: ['hybrid', 'role+aria', context.elementType],
+              tags: ['hybrid', 'role+aria', domSourceTag, context.elementType],
             },
           });
         }
