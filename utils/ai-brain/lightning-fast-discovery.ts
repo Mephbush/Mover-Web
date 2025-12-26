@@ -217,10 +217,16 @@ class MultiLayerFastFinder {
   /**
    * التحقق من صحة العنصر
    */
-  private async isValid(element: any): Promise<boolean> {
+  private async isValid(element: any, page?: any): Promise<boolean> {
     try {
-      const box = await element.boundingBox();
-      return box !== null && box.width > 0 && box.height > 0;
+      const validation = await EnhancedElementValidator.validate(element, page, {
+        checkVisibility: true,
+        checkEnability: true,
+        checkSize: true,
+        checkInteractability: true,
+        minSize: { width: 1, height: 1 },
+      });
+      return validation.isValid || validation.confidence > 0.7;
     } catch {
       return false;
     }
