@@ -32,6 +32,12 @@ export * from './event-driven-robot-brain';
 export * from './adaptive-learning-engine';
 export * from './ultimate-robot-brain';
 
+// NEW: Enhanced Systems - Brain Strengthening (Turbo, Neural, Recovery)
+export * from './turbo-selector-engine';
+export * from './neural-understanding-engine';
+export * from './intelligent-error-recovery';
+export * from './brain-strengthener-core';
+
 // NOTE: master-ai is Node.js-only and should not be exported here
 // Import it only from server-side code using:
 // import { getMasterAI } from '@/utils/ai-brain/master-ai'
