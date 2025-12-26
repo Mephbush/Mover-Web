@@ -166,9 +166,61 @@ export class AdvancedSelectorIntelligence {
       if (cached) return cached;
     }
 
-    // في التنفيذ الفعلي، سيتم جلب البيانات من قاعدة البيانات
-    // For now, return empty array - will integrate with learning-engine
-    return [];
+    try {
+      // Get learned selectors from learning engine
+      const learnedSelector = await this.learningEngine.getBestSelector(
+        context.taskType,
+        context.website,
+        context
+      );
+
+      const candidates: SelectorCandidate[] = [];
+
+      if (learnedSelector && learnedSelector.selector) {
+        candidates.push({
+          selector: learnedSelector.selector,
+          type: 'css',
+          score: Math.min(learnedSelector.confidence * 1.2, 1.0), // Boost learned selectors
+          confidence: learnedSelector.confidence,
+          reliability: learnedSelector.confidence,
+          specificity: 0.8,
+          robustness: 0.85,
+          estimatedWaitTime: 300,
+          fallbackLevel: 0,
+          metadata: {
+            weight: 120,
+            occurrences: 1,
+            lastUsed: new Date(),
+            successCount: 1,
+            failureCount: 0,
+            tags: ['learned', context.taskType, context.elementType],
+          },
+        });
+      }
+
+      // Cache the results
+      if (candidates.length > 0) {
+        this.learningCache.set(cacheKey, candidates);
+      }
+
+      return candidates;
+    } catch (error: any) {
+      this.errorLogger.logError({
+        category: 'unknown',
+        severity: 'warning',
+        message: `Failed to get learned selectors: ${error.message}`,
+        context: {
+          website: context.website,
+          taskType: context.taskType,
+          elementType: context.elementType,
+          timestamp: new Date(),
+        },
+        metadata: {
+          customData: { context },
+        },
+      });
+      return [];
+    }
   }
 
   /**
