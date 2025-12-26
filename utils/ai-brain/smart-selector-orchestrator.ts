@@ -104,13 +104,17 @@ export class SmartSelectorOrchestrator {
     elementType: string,
     elementText?: string,
     pageContent?: string,
-    pageStructure?: any
+    pageStructure?: any,
+    page?: any // Playwright Page instance اختياري
   ): Promise<SelectorSelectionResult> {
     if (this.config.enableLogging) {
       console.log(`\n🎯 اختيار محددات مثلى:`);
       console.log(`   📍 الموقع: ${website}`);
       console.log(`   📋 المهمة: ${taskType}`);
       console.log(`   🏷️ النوع: ${elementType}`);
+      if (page) {
+        console.log(`   🌐 استخدام صفحة Playwright: ✅`);
+      }
     }
 
     const startTime = Date.now();
@@ -126,7 +130,8 @@ export class SmartSelectorOrchestrator {
           pageStructure,
         },
         pageContent,
-        pageStructure
+        pageStructure,
+        page // تمرير الصفحة للحصول على DOM snapshot
       );
 
       // 2. بناء خطة التنفيذ
