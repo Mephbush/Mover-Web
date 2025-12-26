@@ -288,6 +288,7 @@ class IntelligentElementFinder {
       position: box || { x: 0, y: 0, width: 0, height: 0 },
       isInteractive: true,
       isVisible: true,
+      semanticRole: 'generic',
       confidence: 0.95,
       dataAttributes: attrs || {},
     };

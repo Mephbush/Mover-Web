@@ -540,7 +540,7 @@ export class UltraIntelligentSelectorSystem {
           className: el.className,
           id: el.id,
           attributes: Object.fromEntries(
-            Array.from(el.attributes).map(attr => [attr.name, attr.value])
+            Array.from(el.attributes).map((attr: any) => [attr.name, attr.value])
           ),
         }));
       }, selector);
