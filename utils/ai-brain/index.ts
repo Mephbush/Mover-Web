@@ -32,6 +32,12 @@ export * from './event-driven-robot-brain';
 export * from './adaptive-learning-engine';
 export * from './ultimate-robot-brain';
 
+// NEW: Enhanced Systems - Brain Strengthening (Turbo, Neural, Recovery)
+export * from './turbo-selector-engine';
+export * from './neural-understanding-engine';
+export * from './intelligent-error-recovery';
+export * from './brain-strengthener-core';
+
 // NOTE: master-ai is Node.js-only and should not be exported here
 // Import it only from server-side code using:
 // import { getMasterAI } from '@/utils/ai-brain/master-ai'
@@ -44,6 +50,12 @@ import { databaseSync } from './database-sync';
 
 // NEW: Robot Brain Systems
 import { createRobotBrain, RobotTools, RobotHelpers } from './robot-brain-exports';
+
+// NEW: Enhanced Brain Systems - Turbo, Neural, Recovery
+import { turboSelectorEngine } from './turbo-selector-engine';
+import { neuralUnderstandingEngine } from './neural-understanding-engine';
+import { intelligentErrorRecovery } from './intelligent-error-recovery';
+import { brainStrengthenerCore } from './brain-strengthener-core';
 
 /**
  * واجهة موحدة للوصول إلى جميع مكونات عقل AI
@@ -62,6 +74,29 @@ export const AIBrain = {
     create: createRobotBrain,
     tools: RobotTools,
     helpers: RobotHelpers,
+  },
+
+  // NEW: Enhanced Brain Systems (Strengthening)
+  enhanced: {
+    turboSelector: turboSelectorEngine,
+    neuralEngine: neuralUnderstandingEngine,
+    errorRecovery: intelligentErrorRecovery,
+    brain: brainStrengthenerCore,
+
+    // Get all enhancement metrics
+    getMetrics() {
+      return brainStrengthenerCore.getEnhancementMetrics();
+    },
+
+    // Get brain health report
+    getHealthReport() {
+      return brainStrengthenerCore.generateBrainHealthReport();
+    },
+
+    // Quick health check
+    async quickHealthCheck(page: any) {
+      return brainStrengthenerCore.quickHealthCheck(page);
+    },
   },
   
   /**
