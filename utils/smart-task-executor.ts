@@ -14,7 +14,6 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 }
 
 import { SmartRetryManager, SmartErrorAnalyzer, ErrorContext } from './error-handler';
-import { StealthBrowser } from './stealth-browser';
 
 export interface SmartAction {
   type: 'navigate' | 'click' | 'type' | 'wait' | 'extract' | 'screenshot';
@@ -48,7 +47,7 @@ export interface ErrorHandling {
  * Smart Task Executor - Real execution engine
  */
 export class SmartTaskExecutor {
-  private static browser: StealthBrowser | null = null;
+  private static browser: any = null;
   private static retryManager = new SmartRetryManager();
 
   /**
@@ -56,6 +55,7 @@ export class SmartTaskExecutor {
    */
   static async initializeBrowser(): Promise<void> {
     if (!this.browser) {
+      const { StealthBrowser } = await import('./stealth-browser');
       this.browser = new StealthBrowser();
       await this.browser.launch({
         headless: true,

@@ -38,6 +38,18 @@ export * from './neural-understanding-engine';
 export * from './intelligent-error-recovery';
 export * from './brain-strengthener-core';
 
+// 🚀 NEW: Supreme Robot Brain System (v2.0+)
+// محرك عقل الروبوت الفائق الجديد - بحث ذكي + تعلم فائق + قرارات سريعة
+export * from './supreme-brain-exports';
+export {
+  integratedBrain,
+  IntegratedSupremeBrain,
+  BrainAction,
+  BrainActionResult,
+  BrainHealthStatus,
+  RobotBrainConfig,
+} from './integrated-supreme-brain';
+
 // NOTE: master-ai is Node.js-only and should not be exported here
 // Import it only from server-side code using:
 // import { getMasterAI } from '@/utils/ai-brain/master-ai'
