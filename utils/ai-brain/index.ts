@@ -75,6 +75,29 @@ export const AIBrain = {
     tools: RobotTools,
     helpers: RobotHelpers,
   },
+
+  // NEW: Enhanced Brain Systems (Strengthening)
+  enhanced: {
+    turboSelector: turboSelectorEngine,
+    neuralEngine: neuralUnderstandingEngine,
+    errorRecovery: intelligentErrorRecovery,
+    brain: brainStrengthenerCore,
+
+    // Get all enhancement metrics
+    getMetrics() {
+      return brainStrengthenerCore.getEnhancementMetrics();
+    },
+
+    // Get brain health report
+    getHealthReport() {
+      return brainStrengthenerCore.generateBrainHealthReport();
+    },
+
+    // Quick health check
+    async quickHealthCheck(page: any) {
+      return brainStrengthenerCore.quickHealthCheck(page);
+    },
+  },
   
   /**
    * تهيئة النظام الكامل
