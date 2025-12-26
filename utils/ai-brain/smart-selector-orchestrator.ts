@@ -60,6 +60,8 @@ export class SmartSelectorOrchestrator {
   private selectorIntelligence: AdvancedSelectorIntelligence;
   private errorRecovery: SelectorErrorRecovery;
   private performanceTracker: SelectorPerformanceTracker;
+  private discoverySystem: LightningFastDiscoverySystem;
+  private learningEngine: SelectorLearningEngine;
   private config: OrchestratorConfig;
   private executionLog: ExecutionResult[] = [];
 
@@ -70,6 +72,8 @@ export class SmartSelectorOrchestrator {
     this.selectorIntelligence = new AdvancedSelectorIntelligence();
     this.errorRecovery = new SelectorErrorRecovery();
     this.performanceTracker = new SelectorPerformanceTracker();
+    this.discoverySystem = new LightningFastDiscoverySystem();
+    this.learningEngine = new SelectorLearningEngine();
 
     this.config = {
       enableLearning: true,
@@ -86,6 +90,8 @@ export class SmartSelectorOrchestrator {
       console.log(`   📚 التعلم: ${this.config.enableLearning ? '✅' : '❌'}`);
       console.log(`   🔧 استرجاع الأخطاء: ${this.config.enableErrorRecovery ? '✅' : '❌'}`);
       console.log(`   📊 تتبع الأداء: ${this.config.enablePerformanceTracking ? '✅' : '❌'}`);
+      console.log(`   🚀 البحث السريع: ✅`);
+      console.log(`   🧠 نظام التعلم: ✅`);
     }
   }
 
