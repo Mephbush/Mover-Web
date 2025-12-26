@@ -1,9 +1,11 @@
 /**
  * قلب الروبوت الموحد
  * Unified Robot Brain Core
- * 
+ *
  * يجمع جميع الأنظمة الذكية في نظام موحد قوي
  * السرعة + الذكاء + الموثوقية = روبوت مثالي
+ *
+ * EXPORTS: RobotTask, TaskStep, ExecutionResult, UnifiedRobotBrainCore, createUnifiedRobotBrain
  */
 
 import { AdvancedRobotBrainLogic, RobotUnderstanding } from './advanced-robot-logic';
