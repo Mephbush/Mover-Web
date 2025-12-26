@@ -247,19 +247,24 @@ export class AdvancedSelectorIntelligence {
   /**
    * استخراج snapshot DOM غني من الصفحة الفعلية باستخدام page.evaluate
    * يوفر معلومات runtime: computed styles, visibility, actual attributes
+   * يشمل: Shadow DOM, iframes, web components
    */
   async extractDOMSnapshot(
     page: any,
     context: SelectorContext
   ): Promise<{
     elements: any[];
+    shadowDOMElements: any[];
+    iframeElements: any[];
     pageMetadata: any;
   }> {
     try {
       const snapshot = await page.evaluate(() => {
         const elements: any[] = [];
+        const shadowDOMElements: any[] = [];
+        const iframeElements: any[] = [];
 
-        // اجمع معلومات جميع العناصر التفاعلية
+        // ========== البحث في DOM العادي ==========
         document.querySelectorAll('button, input, a, [role="button"], [data-testid], [aria-label]')
           .forEach((el) => {
             const rect = el.getBoundingClientRect();
@@ -275,24 +280,89 @@ export class AdvancedSelectorIntelligence {
               dataTestId: el.getAttribute('data-testid'),
               role: el.getAttribute('role'),
               placeholder: (el as any).placeholder || null,
-              // Runtime attributes
               isVisible: rect.width > 0 && rect.height > 0 && computed.visibility !== 'hidden' && computed.display !== 'none',
               isDisabled: (el as any).disabled || false,
-              isClickable: !((el as any).disabled),
               offsetHeight: rect.height,
               offsetWidth: rect.width,
-              // Parent info
               parentTagName: el.parentElement?.tagName || null,
-              parentClasses: el.parentElement?.className || null,
-              // Data attributes
               dataAttributes: Array.from(el.attributes)
                 .filter(attr => attr.name.startsWith('data-'))
                 .map(attr => ({ name: attr.name, value: attr.value })),
+              source: 'regular_dom',
             });
           });
 
+        // ========== البحث في Shadow DOM ==========
+        document.querySelectorAll('*').forEach((el) => {
+          if (el.shadowRoot) {
+            el.shadowRoot.querySelectorAll('button, input, a, [role="button"], [data-testid], [aria-label]')
+              .forEach((shadowEl) => {
+                const rect = shadowEl.getBoundingClientRect();
+                const computed = window.getComputedStyle(shadowEl);
+
+                shadowDOMElements.push({
+                  tagName: shadowEl.tagName,
+                  type: (shadowEl as any).type || null,
+                  id: shadowEl.id || null,
+                  className: shadowEl.className || null,
+                  textContent: shadowEl.textContent?.trim().substring(0, 100) || null,
+                  ariaLabel: shadowEl.getAttribute('aria-label'),
+                  dataTestId: shadowEl.getAttribute('data-testid'),
+                  role: shadowEl.getAttribute('role'),
+                  placeholder: (shadowEl as any).placeholder || null,
+                  isVisible: rect.width > 0 && rect.height > 0 && computed.visibility !== 'hidden' && computed.display !== 'none',
+                  isDisabled: (shadowEl as any).disabled || false,
+                  parentTagName: el.tagName,
+                  parentId: el.id,
+                  dataAttributes: Array.from(shadowEl.attributes)
+                    .filter(attr => attr.name.startsWith('data-'))
+                    .map(attr => ({ name: attr.name, value: attr.value })),
+                  source: 'shadow_dom',
+                });
+              });
+          }
+        });
+
+        // ========== البحث في iframes ==========
+        // ملاحظة: قد لا يعمل إذا كان iframe من domain مختلف (same-origin policy)
+        document.querySelectorAll('iframe').forEach((iframe) => {
+          try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+            if (iframeDoc) {
+              iframeDoc.querySelectorAll('button, input, a, [role="button"], [data-testid], [aria-label]')
+                .forEach((iframeEl) => {
+                  const rect = iframeEl.getBoundingClientRect?.() || { width: 0, height: 0 };
+                  const computed = (iframeEl.ownerDocument?.defaultView?.getComputedStyle || window.getComputedStyle)(iframeEl);
+
+                  iframeElements.push({
+                    tagName: iframeEl.tagName,
+                    type: (iframeEl as any).type || null,
+                    id: iframeEl.id || null,
+                    className: iframeEl.className || null,
+                    textContent: iframeEl.textContent?.trim().substring(0, 100) || null,
+                    ariaLabel: iframeEl.getAttribute('aria-label'),
+                    dataTestId: iframeEl.getAttribute('data-testid'),
+                    role: iframeEl.getAttribute('role'),
+                    iframeSrc: iframe.src,
+                    iframeId: iframe.id,
+                    isVisible: rect.width > 0 && rect.height > 0,
+                    isDisabled: (iframeEl as any).disabled || false,
+                    dataAttributes: Array.from(iframeEl.attributes)
+                      .filter(attr => attr.name.startsWith('data-'))
+                      .map(attr => ({ name: attr.name, value: attr.value })),
+                    source: 'iframe',
+                  });
+                });
+            }
+          } catch (e) {
+            // Cross-origin iframe - skip
+          }
+        });
+
         return {
           elements,
+          shadowDOMElements,
+          iframeElements,
           pageUrl: window.location.href,
           pageTitle: document.title,
           domReady: document.readyState === 'complete',
@@ -300,8 +370,10 @@ export class AdvancedSelectorIntelligence {
       });
 
       if (this.errorLogger) {
-        this.errorLogger.logInfo('DOM snapshot extracted successfully', {
+        this.errorLogger.logInfo('DOM snapshot extracted successfully (with Shadow DOM & iframes)', {
           elementCount: snapshot.elements.length,
+          shadowDOMCount: snapshot.shadowDOMElements.length,
+          iframeCount: snapshot.iframeElements.length,
           pageUrl: snapshot.pageUrl,
         });
       }
@@ -316,7 +388,7 @@ export class AdvancedSelectorIntelligence {
           context: { elementType: context.elementType },
         } as any);
       }
-      return { elements: [], pageMetadata: {} };
+      return { elements: [], shadowDOMElements: [], iframeElements: [], pageMetadata: {} };
     }
   }
 
