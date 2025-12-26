@@ -55,7 +55,12 @@ class MultiLayerFastFinder {
           };
         }
       } catch (error: any) {
-        console.debug(`Layer 1 ID search failed: ${error.message}`);
+        this.errorLogger.logSelectorError(
+          `#${hints.id}`,
+          error.message,
+          'element',
+          { layer: 1, method: 'id' }
+        );
       }
     }
 
@@ -75,7 +80,12 @@ class MultiLayerFastFinder {
           };
         }
       } catch (error: any) {
-        console.debug(`Layer 1 data-testid search failed: ${error.message}`);
+        this.errorLogger.logSelectorError(
+          `[data-testid="${hints.dataTestId}"]`,
+          error.message,
+          'element',
+          { layer: 1, method: 'data-testid' }
+        );
       }
     }
 
@@ -95,7 +105,12 @@ class MultiLayerFastFinder {
           };
         }
       } catch (error: any) {
-        console.debug(`Layer 1 aria-label search failed: ${error.message}`);
+        this.errorLogger.logSelectorError(
+          `[aria-label="${hints.ariaLabel}"]`,
+          error.message,
+          'element',
+          { layer: 1, method: 'aria-label' }
+        );
       }
     }
 
