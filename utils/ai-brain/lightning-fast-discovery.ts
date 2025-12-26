@@ -1,10 +1,13 @@
 /**
  * نظام البحث السريع جداً عن العناصر
  * Lightning Fast Element Discovery System
- * 
+ *
  * أسرع وأقوى نظام بحث في المشروع
  * سرعة فائقة + ذكاء عميق = نتائج مثالية
  */
+
+import { EnhancedElementValidator, ElementValidationResult } from './enhanced-element-validator';
+import { getErrorLogger, ErrorCategory, ErrorSeverity } from './error-telemetry-system';
 
 export interface FastFindResult {
   found: boolean;
@@ -14,12 +17,15 @@ export interface FastFindResult {
   timeMs: number;
   method: string;
   alternatives: string[];
+  validation?: ElementValidationResult;
 }
 
 /**
  * نظام البحث متعدد الطبقات السريع
  */
 class MultiLayerFastFinder {
+  private errorLogger = getErrorLogger();
+
   /**
    * الطبقة 1: البحث الفوري (أسرع)
    */
@@ -37,7 +43,7 @@ class MultiLayerFastFinder {
     if (hints.id) {
       try {
         const element = page.locator(`#${hints.id}`).first();
-        if (await this.isValid(element)) {
+        if (await this.isValid(element, page)) {
           return {
             found: true,
             selector: `#${hints.id}`,
@@ -48,14 +54,21 @@ class MultiLayerFastFinder {
             alternatives: [],
           };
         }
-      } catch {}
+      } catch (error: any) {
+        this.errorLogger.logSelectorError(
+          `#${hints.id}`,
+          error.message,
+          'element',
+          { layer: 1, method: 'id' }
+        );
+      }
     }
 
     // جرب data-testid (سريع جداً)
     if (hints.dataTestId) {
       try {
         const element = page.locator(`[data-testid="${hints.dataTestId}"]`).first();
-        if (await this.isValid(element)) {
+        if (await this.isValid(element, page)) {
           return {
             found: true,
             selector: `[data-testid="${hints.dataTestId}"]`,
@@ -66,14 +79,21 @@ class MultiLayerFastFinder {
             alternatives: [],
           };
         }
-      } catch {}
+      } catch (error: any) {
+        this.errorLogger.logSelectorError(
+          `[data-testid="${hints.dataTestId}"]`,
+          error.message,
+          'element',
+          { layer: 1, method: 'data-testid' }
+        );
+      }
     }
 
     // جرب aria-label (سريع جداً)
     if (hints.ariaLabel) {
       try {
         const element = page.locator(`[aria-label="${hints.ariaLabel}"]`).first();
-        if (await this.isValid(element)) {
+        if (await this.isValid(element, page)) {
           return {
             found: true,
             selector: `[aria-label="${hints.ariaLabel}"]`,
@@ -84,7 +104,14 @@ class MultiLayerFastFinder {
             alternatives: [],
           };
         }
-      } catch {}
+      } catch (error: any) {
+        this.errorLogger.logSelectorError(
+          `[aria-label="${hints.ariaLabel}"]`,
+          error.message,
+          'element',
+          { layer: 1, method: 'aria-label' }
+        );
+      }
     }
 
     return null;
@@ -104,7 +131,11 @@ class MultiLayerFastFinder {
     for (const selector of selectors) {
       try {
         const element = page.locator(selector).first();
-        if (await this.isValid(element)) {
+        if (await this.isValid(element, page)) {
+          this.errorLogger.recordExecutionTime('layer2_search', Date.now() - startTime, true, {
+            selector,
+            elementType,
+          });
           return {
             found: true,
             selector,
@@ -115,8 +146,20 @@ class MultiLayerFastFinder {
             alternatives: selectors.filter(s => s !== selector).slice(0, 3),
           };
         }
-      } catch {}
+      } catch (error: any) {
+        this.errorLogger.logSelectorError(
+          selector,
+          error.message,
+          elementType,
+          { layer: 2, method: 'directed_search' }
+        );
+      }
     }
+
+    this.errorLogger.recordExecutionTime('layer2_search', Date.now() - startTime, false, {
+      elementType,
+      attemptCount: selectors.length,
+    });
 
     return null;
   }
@@ -137,11 +180,11 @@ class MultiLayerFastFinder {
     for (const selector of selectors) {
       try {
         const elements = await page.locator(selector).all();
-        
+
         for (const element of elements) {
-          if (await this.isValid(element)) {
+          if (await this.isValid(element, page)) {
             const score = await this.scoreElement(element, query);
-            
+
             if (score > 0.7) {
               return {
                 found: true,
@@ -155,7 +198,9 @@ class MultiLayerFastFinder {
             }
           }
         }
-      } catch {}
+      } catch (error: any) {
+        console.debug(`Layer 3 search for selector ${selector} failed: ${error.message}`);
+      }
     }
 
     return null;
@@ -188,11 +233,23 @@ class MultiLayerFastFinder {
       // تقييم كل عنصر
       for (const info of interactive) {
         const selector = this.buildSelectorFromInfo(info);
-        
+
         try {
           const element = page.locator(selector).first();
+
+          // Enhanced validation
+          const validation = await EnhancedElementValidator.validate(element, page, {
+            checkVisibility: true,
+            checkSize: true,
+            checkInteractability: true,
+          });
+
+          if (!validation.isValid) {
+            continue;
+          }
+
           const score = await this.scoreElement(element, query);
-          
+
           if (score > 0.6) {
             return {
               found: true,
@@ -202,11 +259,16 @@ class MultiLayerFastFinder {
               timeMs: Date.now() - startTime,
               method: 'comprehensive_search',
               alternatives: [],
+              validation,
             };
           }
-        } catch {}
+        } catch (error: any) {
+          console.debug(`Layer 4 evaluation of ${selector} failed: ${error.message}`);
+        }
       }
-    } catch {}
+    } catch (error: any) {
+      console.warn(`Layer 4 comprehensive search failed: ${error.message}`);
+    }
 
     return null;
   }
@@ -214,10 +276,16 @@ class MultiLayerFastFinder {
   /**
    * التحقق من صحة العنصر
    */
-  private async isValid(element: any): Promise<boolean> {
+  private async isValid(element: any, page?: any): Promise<boolean> {
     try {
-      const box = await element.boundingBox();
-      return box !== null && box.width > 0 && box.height > 0;
+      const validation = await EnhancedElementValidator.validate(element, page, {
+        checkVisibility: true,
+        checkEnability: true,
+        checkSize: true,
+        checkInteractability: true,
+        minSize: { width: 1, height: 1 },
+      });
+      return validation.isValid || validation.confidence > 0.7;
     } catch {
       return false;
     }
