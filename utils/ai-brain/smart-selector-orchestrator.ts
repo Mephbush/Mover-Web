@@ -1,13 +1,16 @@
 /**
  * نظام تنسيق المحددات الذكي
  * Smart Selector Orchestrator
- * 
+ *
  * يدمج جميع أنظمة اختيار والتعامل مع المحددات في نظام واحد متكامل
+ * يستخدم تنفيذ حقيقي مع متصفح Playwright بدلاً من المحاكاة
  */
 
 import { AdvancedSelectorIntelligence, SelectorStrategy } from './advanced-selector-intelligence';
 import { SelectorErrorRecovery, SelectorErrorContext, RecoveryStrategy } from './selector-error-recovery';
 import { SelectorPerformanceTracker } from './selector-performance-tracker';
+import { LightningFastDiscoverySystem } from './lightning-fast-discovery';
+import { SelectorLearningEngine } from './selector-learning-system';
 
 export interface OrchestratorConfig {
   enableLearning: boolean;
