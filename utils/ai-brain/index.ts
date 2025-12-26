@@ -51,6 +51,12 @@ import { databaseSync } from './database-sync';
 // NEW: Robot Brain Systems
 import { createRobotBrain, RobotTools, RobotHelpers } from './robot-brain-exports';
 
+// NEW: Enhanced Brain Systems - Turbo, Neural, Recovery
+import { turboSelectorEngine } from './turbo-selector-engine';
+import { neuralUnderstandingEngine } from './neural-understanding-engine';
+import { intelligentErrorRecovery } from './intelligent-error-recovery';
+import { brainStrengthenerCore } from './brain-strengthener-core';
+
 /**
  * واجهة موحدة للوصول إلى جميع مكونات عقل AI
  * Unified interface for accessing all AI Brain components (Browser-safe version)
