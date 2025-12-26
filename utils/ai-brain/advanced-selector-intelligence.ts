@@ -95,9 +95,9 @@ export class AdvancedSelectorIntelligence {
 
   /**
    * اختيار أفضل مجموعة من محددات العناصر
-   * 
+   *
    * الخطوات:
-   * 1. توليد جميع المحددات الممكنة
+   * 1. توليد جميع المحددات الممكنة (من التعلم، DOM snapshot، و pageStructure)
    * 2. تقييم كل محدد
    * 3. ترتيب حسب الثقة والموثوقية
    * 4. بناء استراتيجية مع fallbacks
@@ -105,7 +105,8 @@ export class AdvancedSelectorIntelligence {
   async selectBestSelectors(
     context: SelectorContext,
     pageContent?: string,
-    pageStructure?: any
+    pageStructure?: any,
+    page?: any // Playwright Page instance اختياري
   ): Promise<SelectorStrategy> {
     console.log(`🎯 اختيار محددات ذكية للموقع: ${context.website}`);
     console.log(`   المهمة: ${context.taskType}, نوع العنصر: ${context.elementType}`);
@@ -114,40 +115,60 @@ export class AdvancedSelectorIntelligence {
     const learnedCandidates = await this.getLearnedSelectors(context);
     console.log(`   📚 محددات متعلمة: ${learnedCandidates.length}`);
 
-    // 2. توليد محددات من محتوى الصفحة
-    const generatedCandidates = pageContent
-      ? this.generateSelectorsFromContent(pageContent, context)
-      : [];
-    console.log(`   🔍 محددات مولدة: ${generatedCandidates.length}`);
+    let generatedCandidates: SelectorCandidate[] = [];
+    let snapshotUsed = false;
 
-    // 3. توليد محددات من البنية DOM
+    // 2. استخراج DOM snapshot من الصفحة الفعلية (أولوية أعلى)
+    if (page) {
+      try {
+        const snapshot = await this.extractDOMSnapshot(page, context);
+        if (snapshot.elements.length > 0) {
+          generatedCandidates = this.generateSelectorsFromDOMSnapshot(snapshot, context);
+          snapshotUsed = true;
+          console.log(`   🌐 محددات من DOM snapshot: ${generatedCandidates.length} (الحقيقي!)`);
+        }
+      } catch (error: any) {
+        console.log(`   ⚠️ فشل استخراج DOM snapshot: ${error.message}`);
+      }
+    }
+
+    // 3. fallback: توليد محددات من محتوى الصفحة (regex)
+    if (!snapshotUsed && pageContent) {
+      generatedCandidates = this.generateSelectorsFromContent(pageContent, context);
+      console.log(`   🔍 محددات مولدة (regex): ${generatedCandidates.length}`);
+    }
+
+    // 4. توليد محددات من البنية DOM
     const structureCandidates = pageStructure
       ? this.generateSelectorsFromStructure(pageStructure, context)
       : [];
     console.log(`   🏗️ محددات من البنية: ${structureCandidates.length}`);
 
-    // 4. دمج جميع المحددات
+    // 5. دمج جميع المحددات
     const allCandidates = [
       ...learnedCandidates,
       ...generatedCandidates,
       ...structureCandidates,
     ];
 
-    // 5. إزالة التكرار والتقييم
+    // 6. إزالة التكرار والتقييم
     const uniqueCandidates = this.deduplicateSelectors(allCandidates);
     console.log(`   🔄 محددات فريدة: ${uniqueCandidates.length}`);
 
-    // 6. تقييم كل محدد
+    // 7. تقييم كل محدد
     const scoredCandidates = await this.scoreSelectors(
       uniqueCandidates,
       context
     );
     console.log(`   📊 تم تقييم المحددات بنجاح`);
 
-    // 7. بناء الاستراتيجية
+    // 8. بناء الاستراتيجية
     const strategy = this.buildStrategy(scoredCandidates, context);
     console.log(`   ✅ استراتيجية محددات جاهزة`);
     console.log(`   🎯 معدل النجاح المتوقع: ${(strategy.estimatedSuccessRate * 100).toFixed(1)}%`);
+    if (snapshotUsed) {
+      console.log(`   ✨ تم استخدام بيانات runtime حقيقية من الصفحة`);
+    }
 
     return strategy;
   }
