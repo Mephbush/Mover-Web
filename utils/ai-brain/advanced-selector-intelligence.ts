@@ -8,6 +8,7 @@
 
 import { LearningEngine } from './learning-engine';
 import { getErrorLogger } from './error-telemetry-system';
+import { AdaptiveWeightScorer, SelectorPerformanceData } from './adaptive-weight-scorer';
 
 export interface SelectorCandidate {
   selector: string;
