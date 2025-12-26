@@ -548,6 +548,48 @@ export class SmartSelectorOrchestrator {
   }
 
   /**
+   * تحويل المحدد إلى كائن query للنظام السريع
+   * يدعم تنسيقات مختلفة: CSS selectors, data-testid, aria-label, id, etc.
+   */
+  private parseSelector(selector: string): any {
+    const query: any = {};
+
+    // تحويل selector إلى query object
+    if (selector.startsWith('#')) {
+      // ID selector: #myId
+      query.id = selector.substring(1);
+    } else if (selector.includes('data-testid')) {
+      // data-testid selector: [data-testid="value"]
+      const match = selector.match(/data-testid=["']([^"']+)["']/);
+      if (match) {
+        query.dataTestId = match[1];
+      }
+    } else if (selector.includes('aria-label')) {
+      // aria-label selector: [aria-label="value"]
+      const match = selector.match(/aria-label=["']([^"']+)["']/);
+      if (match) {
+        query.ariaLabel = match[1];
+      }
+    } else if (selector.includes('[type=')) {
+      // Type selector: [type="button"]
+      const match = selector.match(/\[type=["']([^"']+)["']\]/);
+      if (match) {
+        query.type = match[1];
+      }
+      // محاولة استخراج النص أيضاً
+      const textMatch = selector.match(/contains\(text\(\),\s*["']([^"']+)["']\)/);
+      if (textMatch) {
+        query.text = textMatch[1];
+      }
+    } else {
+      // للمحددات الأخرى، نمرره كما هو
+      query.text = selector;
+    }
+
+    return query;
+  }
+
+  /**
    * بناء خطة التنفيذ
    */
   private buildExecutionPlan(
