@@ -148,11 +148,11 @@ class MultiLayerFastFinder {
     for (const selector of selectors) {
       try {
         const elements = await page.locator(selector).all();
-        
+
         for (const element of elements) {
-          if (await this.isValid(element)) {
+          if (await this.isValid(element, page)) {
             const score = await this.scoreElement(element, query);
-            
+
             if (score > 0.7) {
               return {
                 found: true,
@@ -166,7 +166,9 @@ class MultiLayerFastFinder {
             }
           }
         }
-      } catch {}
+      } catch (error: any) {
+        console.debug(`Layer 3 search for selector ${selector} failed: ${error.message}`);
+      }
     }
 
     return null;
