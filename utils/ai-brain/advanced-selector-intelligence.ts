@@ -937,14 +937,14 @@ export class AdvancedSelectorIntelligence {
   }
 
   /**
-   * تقييم المحددات بناءً على معايير متعددة
+   * تقييم المحددات بناءً على معايير متعددة + أوزان مكيفة حسب الموقع
    */
   private async scoreSelectors(
     candidates: SelectorCandidate[],
     context: SelectorContext
   ): Promise<SelectorCandidate[]> {
     const scored = candidates.map((candidate) => {
-      // 1. حساب درجة الثقة بناءً على النوع
+      // 1. حساب درجة الثقة بناءً على النوع (baseline)
       const typeScore = this.getTypeScore(candidate.type);
 
       // 2. حساب درجة الموثوقية من التاريخ
@@ -960,12 +960,24 @@ export class AdvancedSelectorIntelligence {
         context
       );
 
-      // 5. الدرجة الكلية (مرجح)
-      const finalScore =
+      // 5. الدرجة الأساسية (مرجح) - Static weights
+      const baselineScore =
         typeScore * 0.3 + // وزن النوع
         reliabilityScore * 0.3 + // وزن الموثوقية
         specificityScore * 0.2 + // وزن الخصوصية
         robustnessScore * 0.2; // وزن المقاومة
+
+      // 6. تطبيق الأوزان المكيفة حسب الموقع (Adaptive weights)
+      let finalScore = baselineScore;
+
+      if (this.adaptiveWeightScorer && context.website) {
+        finalScore = this.adaptiveWeightScorer.calculateAdaptiveScore(
+          context.website,
+          candidate.type,
+          baselineScore,
+          candidate.confidence
+        );
+      }
 
       return {
         ...candidate,
