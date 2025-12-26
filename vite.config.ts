@@ -10,4 +10,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   },
+  optimizeDeps: {
+    // Exclude Node.js-only modules from dependency pre-bundling
+    exclude: ['playwright', './utils/stealth-browser', './utils/smart-task-executor'],
+  },
 });
