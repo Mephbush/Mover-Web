@@ -8,6 +8,7 @@
 
 import { LearningEngine } from './learning-engine';
 import { getErrorLogger } from './error-telemetry-system';
+import { AdaptiveWeightScorer, SelectorPerformanceData } from './adaptive-weight-scorer';
 
 export interface SelectorCandidate {
   selector: string;
@@ -68,13 +69,15 @@ export class AdvancedSelectorIntelligence {
   private performanceHistory: Map<string, SelectorReport[]> = new Map();
   private selectorPatterns: Map<string, RegExp> = new Map();
   private learningEngine: LearningEngine;
+  private adaptiveWeightScorer: AdaptiveWeightScorer;
   private errorLogger = getErrorLogger();
 
   /**
    * Initialize selector patterns
    */
-  constructor(learningEngine?: LearningEngine) {
+  constructor(learningEngine?: LearningEngine, adaptiveScorer?: AdaptiveWeightScorer) {
     this.learningEngine = learningEngine || new LearningEngine();
+    this.adaptiveWeightScorer = adaptiveScorer || new AdaptiveWeightScorer();
     this.initializeSelectorPatterns();
   }
 
@@ -95,9 +98,9 @@ export class AdvancedSelectorIntelligence {
 
   /**
    * اختيار أفضل مجموعة من محددات العناصر
-   * 
+   *
    * الخطوات:
-   * 1. توليد جميع المحددات الممكنة
+   * 1. توليد جميع المحددات الممكنة (من التعلم، DOM snapshot، و pageStructure)
    * 2. تقييم كل محدد
    * 3. ترتيب حسب الثقة والموثوقية
    * 4. بناء استراتيجية مع fallbacks
@@ -105,7 +108,8 @@ export class AdvancedSelectorIntelligence {
   async selectBestSelectors(
     context: SelectorContext,
     pageContent?: string,
-    pageStructure?: any
+    pageStructure?: any,
+    page?: any // Playwright Page instance اختياري
   ): Promise<SelectorStrategy> {
     console.log(`🎯 اختيار محددات ذكية للموقع: ${context.website}`);
     console.log(`   المهمة: ${context.taskType}, نوع العنصر: ${context.elementType}`);
@@ -114,40 +118,60 @@ export class AdvancedSelectorIntelligence {
     const learnedCandidates = await this.getLearnedSelectors(context);
     console.log(`   📚 محددات متعلمة: ${learnedCandidates.length}`);
 
-    // 2. توليد محددات من محتوى الصفحة
-    const generatedCandidates = pageContent
-      ? this.generateSelectorsFromContent(pageContent, context)
-      : [];
-    console.log(`   🔍 محددات مولدة: ${generatedCandidates.length}`);
+    let generatedCandidates: SelectorCandidate[] = [];
+    let snapshotUsed = false;
 
-    // 3. توليد محددات من البنية DOM
+    // 2. استخراج DOM snapshot من الصفحة الفعلية (أولوية أعلى)
+    if (page) {
+      try {
+        const snapshot = await this.extractDOMSnapshot(page, context);
+        if (snapshot.elements.length > 0) {
+          generatedCandidates = this.generateSelectorsFromDOMSnapshot(snapshot, context);
+          snapshotUsed = true;
+          console.log(`   🌐 محددات من DOM snapshot: ${generatedCandidates.length} (الحقيقي!)`);
+        }
+      } catch (error: any) {
+        console.log(`   ⚠️ فشل استخراج DOM snapshot: ${error.message}`);
+      }
+    }
+
+    // 3. fallback: توليد محددات من محتوى الصفحة (regex)
+    if (!snapshotUsed && pageContent) {
+      generatedCandidates = this.generateSelectorsFromContent(pageContent, context);
+      console.log(`   🔍 محددات مولدة (regex): ${generatedCandidates.length}`);
+    }
+
+    // 4. توليد محددات من البنية DOM
     const structureCandidates = pageStructure
       ? this.generateSelectorsFromStructure(pageStructure, context)
       : [];
     console.log(`   🏗️ محددات من البنية: ${structureCandidates.length}`);
 
-    // 4. دمج جميع المحددات
+    // 5. دمج جميع المحددات
     const allCandidates = [
       ...learnedCandidates,
       ...generatedCandidates,
       ...structureCandidates,
     ];
 
-    // 5. إزالة التكرار والتقييم
+    // 6. إزالة التكرار والتقييم
     const uniqueCandidates = this.deduplicateSelectors(allCandidates);
     console.log(`   🔄 محددات فريدة: ${uniqueCandidates.length}`);
 
-    // 6. تقييم كل محدد
+    // 7. تقييم كل محدد
     const scoredCandidates = await this.scoreSelectors(
       uniqueCandidates,
       context
     );
     console.log(`   📊 تم تقييم المحددات بنجاح`);
 
-    // 7. بناء الاستراتيجية
+    // 8. بناء الاستراتيجية
     const strategy = this.buildStrategy(scoredCandidates, context);
     console.log(`   ✅ استراتيجية محددات جاهزة`);
     console.log(`   🎯 معدل النجاح المتوقع: ${(strategy.estimatedSuccessRate * 100).toFixed(1)}%`);
+    if (snapshotUsed) {
+      console.log(`   ✨ تم استخدام بيانات runtime حقيقية من الصفحة`);
+    }
 
     return strategy;
   }
@@ -224,7 +248,292 @@ export class AdvancedSelectorIntelligence {
   }
 
   /**
-   * توليد محددات من محتوى الصفحة
+   * استخراج snapshot DOM غني من الصفحة الفعلية باستخدام page.evaluate
+   * يوفر معلومات runtime: computed styles, visibility, actual attributes
+   * يشمل: Shadow DOM, iframes, web components
+   */
+  async extractDOMSnapshot(
+    page: any,
+    context: SelectorContext
+  ): Promise<{
+    elements: any[];
+    shadowDOMElements: any[];
+    iframeElements: any[];
+    pageMetadata: any;
+  }> {
+    try {
+      const snapshot = await page.evaluate(() => {
+        const elements: any[] = [];
+        const shadowDOMElements: any[] = [];
+        const iframeElements: any[] = [];
+
+        // ========== البحث في DOM العادي ==========
+        document.querySelectorAll('button, input, a, [role="button"], [data-testid], [aria-label]')
+          .forEach((el) => {
+            const rect = el.getBoundingClientRect();
+            const computed = window.getComputedStyle(el);
+
+            elements.push({
+              tagName: el.tagName,
+              type: (el as any).type || null,
+              id: el.id || null,
+              className: el.className || null,
+              textContent: el.textContent?.trim().substring(0, 100) || null,
+              ariaLabel: el.getAttribute('aria-label'),
+              dataTestId: el.getAttribute('data-testid'),
+              role: el.getAttribute('role'),
+              placeholder: (el as any).placeholder || null,
+              isVisible: rect.width > 0 && rect.height > 0 && computed.visibility !== 'hidden' && computed.display !== 'none',
+              isDisabled: (el as any).disabled || false,
+              offsetHeight: rect.height,
+              offsetWidth: rect.width,
+              parentTagName: el.parentElement?.tagName || null,
+              dataAttributes: Array.from(el.attributes)
+                .filter(attr => attr.name.startsWith('data-'))
+                .map(attr => ({ name: attr.name, value: attr.value })),
+              source: 'regular_dom',
+            });
+          });
+
+        // ========== البحث في Shadow DOM ==========
+        document.querySelectorAll('*').forEach((el) => {
+          if (el.shadowRoot) {
+            el.shadowRoot.querySelectorAll('button, input, a, [role="button"], [data-testid], [aria-label]')
+              .forEach((shadowEl) => {
+                const rect = shadowEl.getBoundingClientRect();
+                const computed = window.getComputedStyle(shadowEl);
+
+                shadowDOMElements.push({
+                  tagName: shadowEl.tagName,
+                  type: (shadowEl as any).type || null,
+                  id: shadowEl.id || null,
+                  className: shadowEl.className || null,
+                  textContent: shadowEl.textContent?.trim().substring(0, 100) || null,
+                  ariaLabel: shadowEl.getAttribute('aria-label'),
+                  dataTestId: shadowEl.getAttribute('data-testid'),
+                  role: shadowEl.getAttribute('role'),
+                  placeholder: (shadowEl as any).placeholder || null,
+                  isVisible: rect.width > 0 && rect.height > 0 && computed.visibility !== 'hidden' && computed.display !== 'none',
+                  isDisabled: (shadowEl as any).disabled || false,
+                  parentTagName: el.tagName,
+                  parentId: el.id,
+                  dataAttributes: Array.from(shadowEl.attributes)
+                    .filter(attr => attr.name.startsWith('data-'))
+                    .map(attr => ({ name: attr.name, value: attr.value })),
+                  source: 'shadow_dom',
+                });
+              });
+          }
+        });
+
+        // ========== البحث في iframes ==========
+        // ملاحظة: قد لا يعمل إذا كان iframe من domain مختلف (same-origin policy)
+        document.querySelectorAll('iframe').forEach((iframe) => {
+          try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+            if (iframeDoc) {
+              iframeDoc.querySelectorAll('button, input, a, [role="button"], [data-testid], [aria-label]')
+                .forEach((iframeEl) => {
+                  const rect = iframeEl.getBoundingClientRect?.() || { width: 0, height: 0 };
+                  const computed = (iframeEl.ownerDocument?.defaultView?.getComputedStyle || window.getComputedStyle)(iframeEl);
+
+                  iframeElements.push({
+                    tagName: iframeEl.tagName,
+                    type: (iframeEl as any).type || null,
+                    id: iframeEl.id || null,
+                    className: iframeEl.className || null,
+                    textContent: iframeEl.textContent?.trim().substring(0, 100) || null,
+                    ariaLabel: iframeEl.getAttribute('aria-label'),
+                    dataTestId: iframeEl.getAttribute('data-testid'),
+                    role: iframeEl.getAttribute('role'),
+                    iframeSrc: iframe.src,
+                    iframeId: iframe.id,
+                    isVisible: rect.width > 0 && rect.height > 0,
+                    isDisabled: (iframeEl as any).disabled || false,
+                    dataAttributes: Array.from(iframeEl.attributes)
+                      .filter(attr => attr.name.startsWith('data-'))
+                      .map(attr => ({ name: attr.name, value: attr.value })),
+                    source: 'iframe',
+                  });
+                });
+            }
+          } catch (e) {
+            // Cross-origin iframe - skip
+          }
+        });
+
+        return {
+          elements,
+          shadowDOMElements,
+          iframeElements,
+          pageUrl: window.location.href,
+          pageTitle: document.title,
+          domReady: document.readyState === 'complete',
+        };
+      });
+
+      if (this.errorLogger) {
+        this.errorLogger.logInfo('DOM snapshot extracted successfully (with Shadow DOM & iframes)', {
+          elementCount: snapshot.elements.length,
+          shadowDOMCount: snapshot.shadowDOMElements.length,
+          iframeCount: snapshot.iframeElements.length,
+          pageUrl: snapshot.pageUrl,
+        });
+      }
+
+      return snapshot;
+    } catch (error: any) {
+      if (this.errorLogger) {
+        this.errorLogger.logError({
+          category: 'dom_extraction',
+          severity: 'warning',
+          message: `Failed to extract DOM snapshot: ${error.message}`,
+          context: { elementType: context.elementType },
+        } as any);
+      }
+      return { elements: [], shadowDOMElements: [], iframeElements: [], pageMetadata: {} };
+    }
+  }
+
+  /**
+   * توليد محددات من DOM snapshot حقيقي (أسلوب محسّن)
+   * يشمل: regular DOM, Shadow DOM, iframes
+   */
+  private generateSelectorsFromDOMSnapshot(
+    snapshot: {
+      elements: any[];
+      shadowDOMElements?: any[];
+      iframeElements?: any[];
+    },
+    context: SelectorContext
+  ): SelectorCandidate[] {
+    const candidates: SelectorCandidate[] = [];
+    const seenSelectors = new Set<string>();
+
+    // معالجة جميع مصادر العناصر
+    const allElements = [
+      ...(snapshot.elements || []),
+      ...(snapshot.shadowDOMElements || []).map(e => ({...e, domType: 'shadow' as const})),
+      ...(snapshot.iframeElements || []).map(e => ({...e, domType: 'iframe' as const})),
+    ];
+
+    allElements.forEach((element) => {
+      // حساب معدل الموثوقية بناءً على مصدر العنصر
+      const isShadowDOM = element.domType === 'shadow';
+      const isIframe = element.domType === 'iframe';
+      const domSourceTag = isShadowDOM ? 'shadow-dom' : isIframe ? 'iframe' : 'regular-dom';
+
+      // Adjust confidence for elements from complex DOM structures
+      const domComplexityFactor = isShadowDOM ? 0.85 : isIframe ? 0.8 : 1.0;
+
+      // 1. استخدم data-testid إن وجد
+      if (element.dataTestId && !seenSelectors.has(`[data-testid="${element.dataTestId}"]`)) {
+        const selector = `[data-testid="${element.dataTestId}"]`;
+        seenSelectors.add(selector);
+        candidates.push({
+          selector,
+          type: 'data-testid',
+          score: (element.isVisible ? 0.95 : 0.75) * domComplexityFactor,
+          confidence: 0.9 * domComplexityFactor,
+          reliability: 0.88 * domComplexityFactor,
+          specificity: 0.98,
+          robustness: 0.95 * domComplexityFactor,
+          estimatedWaitTime: isShadowDOM ? 400 : isIframe ? 600 : 300,
+          fallbackLevel: isIframe ? 2 : isShadowDOM ? 1 : 0,
+          metadata: {
+            weight: isIframe ? 85 : isShadowDOM ? 100 : 110,
+            occurrences: 1,
+            lastUsed: new Date(),
+            successCount: 0,
+            failureCount: 0,
+            tags: ['data-testid', 'runtime-extracted', domSourceTag, context.elementType],
+          },
+        });
+      }
+
+      // 2. استخدم aria-label إن وجد وكان مناسباً
+      if (element.ariaLabel && !seenSelectors.has(`[aria-label="${element.ariaLabel}"]`)) {
+        const selector = `[aria-label="${element.ariaLabel}"]`;
+        seenSelectors.add(selector);
+        candidates.push({
+          selector,
+          type: 'aria-label',
+          score: (element.isVisible ? 0.9 : 0.7) * domComplexityFactor,
+          confidence: 0.85 * domComplexityFactor,
+          reliability: 0.82 * domComplexityFactor,
+          specificity: 0.92,
+          robustness: 0.88 * domComplexityFactor,
+          estimatedWaitTime: isShadowDOM ? 500 : isIframe ? 700 : 400,
+          fallbackLevel: isIframe ? 2 : isShadowDOM ? 1 : 1,
+          metadata: {
+            weight: isIframe ? 75 : isShadowDOM ? 85 : 95,
+            occurrences: 1,
+            lastUsed: new Date(),
+            successCount: 0,
+            failureCount: 0,
+            tags: ['aria-label', 'runtime-extracted', domSourceTag, context.elementType],
+          },
+        });
+      }
+
+      // 3. استخدم ID إن وجد
+      if (element.id && !seenSelectors.has(`#${element.id}`)) {
+        const selector = `#${element.id}`;
+        seenSelectors.add(selector);
+        candidates.push({
+          selector,
+          type: 'id',
+          score: (element.isVisible ? 0.98 : 0.85) * domComplexityFactor,
+          confidence: 0.95 * domComplexityFactor,
+          reliability: 0.92 * domComplexityFactor,
+          specificity: 1.0,
+          robustness: 0.98 * domComplexityFactor,
+          estimatedWaitTime: isShadowDOM ? 350 : isIframe ? 550 : 250,
+          fallbackLevel: isIframe ? 2 : isShadowDOM ? 1 : 0,
+          metadata: {
+            weight: isIframe ? 95 : isShadowDOM ? 105 : 120,
+            occurrences: 1,
+            lastUsed: new Date(),
+            successCount: 0,
+            failureCount: 0,
+            tags: ['id', 'runtime-extracted', domSourceTag, context.elementType],
+          },
+        });
+      }
+
+      // 4. استخدم role attribute مع aria-label
+      if (element.role && element.ariaLabel) {
+        const selector = `[role="${element.role}"][aria-label="${element.ariaLabel}"]`;
+        if (!seenSelectors.has(selector)) {
+          seenSelectors.add(selector);
+          candidates.push({
+            selector,
+            type: 'hybrid',
+            score: (element.isVisible ? 0.88 : 0.68) * domComplexityFactor,
+            confidence: 0.83 * domComplexityFactor,
+            reliability: 0.80 * domComplexityFactor,
+            specificity: 0.95,
+            robustness: 0.85 * domComplexityFactor,
+            estimatedWaitTime: isShadowDOM ? 600 : isIframe ? 800 : 500,
+            fallbackLevel: isIframe ? 2 : isShadowDOM ? 1 : 1,
+            metadata: {
+              weight: isIframe ? 60 : isShadowDOM ? 75 : 85,
+              occurrences: 1,
+              lastUsed: new Date(),
+              successCount: 0,
+              failureCount: 0,
+              tags: ['hybrid', 'role+aria', domSourceTag, context.elementType],
+            },
+          });
+        }
+      }
+    });
+
+    return candidates;
+  }
+
+  /**
+   * توليد محددات من محتوى الصفحة (fallback من regex للتوافقية)
    */
   private generateSelectorsFromContent(
     pageContent: string,
@@ -242,20 +551,20 @@ export class AdvancedSelectorIntelligence {
         candidates.push({
           selector: `[data-testid="${testId}"]`,
           type: 'data-testid',
-          score: 0.9,
-          confidence: 0.85,
-          reliability: 0.8,
-          specificity: 0.95,
-          robustness: 0.9,
+          score: 0.85,
+          confidence: 0.80,
+          reliability: 0.75,
+          specificity: 0.92,
+          robustness: 0.87,
           estimatedWaitTime: 500,
-          fallbackLevel: 0,
+          fallbackLevel: 1,
           metadata: {
-            weight: 100,
+            weight: 90,
             occurrences: 1,
             lastUsed: new Date(),
             successCount: 0,
             failureCount: 0,
-            tags: ['data-testid', context.elementType],
+            tags: ['data-testid', 'regex-extracted', context.elementType],
           },
         });
       });
@@ -322,7 +631,77 @@ export class AdvancedSelectorIntelligence {
   }
 
   /**
-   * توليد محددات من Attributes
+   * فحص إذا كانت اسم class مولدة بواسطة bundler (hashed)
+   * أمثلة: _header__1a2b, styles__container--3c4d
+   */
+  private isHashedClassName(className: string): boolean {
+    // أنماط شهيرة للأسماء المولدة
+    const hashedPatterns = [
+      /^[a-z0-9]{6,}__/i, // CSS Modules (file__name)
+      /^_[a-z0-9]+$/i, // styled-components
+      /^[a-z0-9]{8,}$/i, // Random hash-like names
+      /^[A-Z][a-z]+-[a-z0-9]{6,}$/i, // BEM with hash
+    ];
+    return hashedPatterns.some(pattern => pattern.test(className));
+  }
+
+  /**
+   * تحسين اسم class بإزالة الأجزاء المولدة والاحتفاظ بالأجزاء المعنية
+   */
+  private normalizeClassName(className: string): string[] {
+    // إذا كان مولداً، حاول استخراج الجزء المفيد
+    if (this.isHashedClassName(className)) {
+      // استخرج الكلمات المعنية
+      const meaningful = className.split(/[-_]/)
+        .filter(part => /[a-zA-Z]/.test(part) && part.length > 2);
+      return meaningful.length > 0 ? meaningful : [className];
+    }
+
+    return [className];
+  }
+
+  /**
+   * استخراج وترتيب attributes data-* بناءً على الأهمية
+   */
+  private extractAndPrioritizeDataAttributes(pageContent: string, context: SelectorContext): Array<{attr: string, value: string, importance: number}> {
+    const dataAttrs: Array<{attr: string, value: string, importance: number}> = [];
+
+    // البحث عن جميع data-* attributes
+    const dataMatches = pageContent.match(/data-[\w-]+=["']([^"']*)/gi) || [];
+
+    const priorityPatterns = {
+      'data-testid': 100, // الأعلى أولوية
+      'data-test-id': 100,
+      'data-qa': 95,
+      'data-cy': 90, // Cypress
+      'data-e2e': 90,
+      'data-automation': 85,
+      'data-test': 80,
+      'data-id': 75,
+      'data-name': 70,
+      'data-role': 65,
+      'data-label': 60,
+    };
+
+    dataMatches.forEach((match) => {
+      const attrMatch = match.match(/data-([\w-]+)=["']([^"']*)/);
+      if (attrMatch) {
+        const fullAttr = `data-${attrMatch[1]}`;
+        const value = attrMatch[2];
+        const importance = priorityPatterns[fullAttr as keyof typeof priorityPatterns] || 40;
+
+        if (value && this.matchesContext(value, context)) {
+          dataAttrs.push({ attr: fullAttr, value, importance });
+        }
+      }
+    });
+
+    // ترتيب حسب الأهمية
+    return dataAttrs.sort((a, b) => b.importance - a.importance);
+  }
+
+  /**
+   * توليد محددات من Attributes (محسّنة)
    */
   private generateFromAttributes(
     pageContent: string,
@@ -352,37 +731,100 @@ export class AdvancedSelectorIntelligence {
               lastUsed: new Date(),
               successCount: 0,
               failureCount: 0,
-              tags: ['id', context.elementType],
+              tags: ['id', 'stable', context.elementType],
             },
           });
         }
       });
     }
 
-    // البحث عن Class attributes
+    // البحث عن data-* attributes (ذو أولوية عالية)
+    const prioritizedDataAttrs = this.extractAndPrioritizeDataAttributes(pageContent, context);
+    prioritizedDataAttrs.slice(0, 5).forEach(({attr, value, importance}) => {
+      const selector = `[${attr}="${value}"]`;
+      const baseScore = Math.min(0.95, (importance / 100) * 0.9);
+
+      candidates.push({
+        selector,
+        type: 'data-testid',
+        score: baseScore,
+        confidence: baseScore * 0.95,
+        reliability: baseScore * 0.92,
+        specificity: 0.96,
+        robustness: baseScore * 0.93,
+        estimatedWaitTime: 400,
+        fallbackLevel: 0,
+        metadata: {
+          weight: Math.round(importance),
+          occurrences: 1,
+          lastUsed: new Date(),
+          successCount: 0,
+          failureCount: 0,
+          tags: [`${attr}`, 'data-attribute', 'high-priority', context.elementType],
+        },
+      });
+    });
+
+    // البحث عن Class attributes (مع تطبيع)
     const classMatches = pageContent.match(/class=["']([^"']*)/gi);
     if (classMatches) {
+      const processedClasses = new Set<string>();
+
       classMatches.forEach((match) => {
-        const classes = match.replace(/class=["']/, '').split(' ');
+        const classStr = match.replace(/class=["']/, '');
+        const classes = classStr.split(' ');
+
         classes.forEach((cls) => {
-          if (this.matchesContext(cls, context)) {
+          if (processedClasses.has(cls) || !cls.trim()) return;
+
+          // فلتر: تخطي الأسماء المولدة
+          if (this.isHashedClassName(cls)) {
+            // حاول استخراج الأجزاء المعنية
+            const meaningful = this.normalizeClassName(cls);
+            meaningful.forEach((mcls) => {
+              if (this.matchesContext(mcls, context) && !processedClasses.has(mcls)) {
+                processedClasses.add(mcls);
+                candidates.push({
+                  selector: `.${mcls}`,
+                  type: 'class',
+                  score: 0.65, // أقل لأنها مستخرجة من hashed
+                  confidence: 0.60,
+                  reliability: 0.55,
+                  specificity: 0.55,
+                  robustness: 0.50,
+                  estimatedWaitTime: 800,
+                  fallbackLevel: 2,
+                  metadata: {
+                    weight: 50,
+                    occurrences: 1,
+                    lastUsed: new Date(),
+                    successCount: 0,
+                    failureCount: 0,
+                    tags: ['class', 'extracted-from-hash', context.elementType],
+                  },
+                });
+              }
+            });
+          } else if (this.matchesContext(cls, context)) {
+            // أسماء معتادة (stable)
+            processedClasses.add(cls);
             candidates.push({
               selector: `.${cls}`,
               type: 'class',
-              score: 0.75,
-              confidence: 0.7,
-              reliability: 0.65,
-              specificity: 0.6,
-              robustness: 0.65,
-              estimatedWaitTime: 600,
+              score: 0.80,
+              confidence: 0.75,
+              reliability: 0.70,
+              specificity: 0.70,
+              robustness: 0.75,
+              estimatedWaitTime: 500,
               fallbackLevel: 1,
               metadata: {
-                weight: 70,
+                weight: 80,
                 occurrences: 1,
                 lastUsed: new Date(),
                 successCount: 0,
                 failureCount: 0,
-                tags: ['class', context.elementType],
+                tags: ['class', 'stable', 'human-readable', context.elementType],
               },
             });
           }
@@ -495,14 +937,14 @@ export class AdvancedSelectorIntelligence {
   }
 
   /**
-   * تقييم المحددات بناءً على معايير متعددة
+   * تقييم المحددات بناءً على معايير متعددة + أوزان مكيفة حسب الموقع
    */
   private async scoreSelectors(
     candidates: SelectorCandidate[],
     context: SelectorContext
   ): Promise<SelectorCandidate[]> {
     const scored = candidates.map((candidate) => {
-      // 1. حساب درجة الثقة بناءً على النوع
+      // 1. حساب درجة الثقة بناءً على النوع (baseline)
       const typeScore = this.getTypeScore(candidate.type);
 
       // 2. حساب درجة الموثوقية من التاريخ
@@ -518,12 +960,24 @@ export class AdvancedSelectorIntelligence {
         context
       );
 
-      // 5. الدرجة الكلية (مرجح)
-      const finalScore =
+      // 5. الدرجة الأساسية (مرجح) - Static weights
+      const baselineScore =
         typeScore * 0.3 + // وزن النوع
         reliabilityScore * 0.3 + // وزن الموثوقية
         specificityScore * 0.2 + // وزن الخصوصية
         robustnessScore * 0.2; // وزن المقاومة
+
+      // 6. تطبيق الأوزان المكيفة حسب الموقع (Adaptive weights)
+      let finalScore = baselineScore;
+
+      if (this.adaptiveWeightScorer && context.website) {
+        finalScore = this.adaptiveWeightScorer.calculateAdaptiveScore(
+          context.website,
+          candidate.type,
+          baselineScore,
+          candidate.confidence
+        );
+      }
 
       return {
         ...candidate,
