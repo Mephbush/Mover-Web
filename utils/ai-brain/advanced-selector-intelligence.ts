@@ -1,10 +1,13 @@
 /**
  * نظام ذكاء المحددات المتقدم
  * Advanced Selector Intelligence System
- * 
+ *
  * يحسّن من قدرة الروبوت على اكتشاف والتعامل مع محددات العناصر
  * Improves selector detection, ranking, and fallback strategies
  */
+
+import { LearningEngine } from './learning-engine';
+import { getErrorLogger } from './error-telemetry-system';
 
 export interface SelectorCandidate {
   selector: string;
