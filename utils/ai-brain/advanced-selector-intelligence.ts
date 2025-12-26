@@ -67,11 +67,14 @@ export class AdvancedSelectorIntelligence {
   private learningCache: Map<string, SelectorCandidate[]> = new Map();
   private performanceHistory: Map<string, SelectorReport[]> = new Map();
   private selectorPatterns: Map<string, RegExp> = new Map();
+  private learningEngine: LearningEngine;
+  private errorLogger = getErrorLogger();
 
   /**
    * Initialize selector patterns
    */
-  constructor() {
+  constructor(learningEngine?: LearningEngine) {
+    this.learningEngine = learningEngine || new LearningEngine();
     this.initializeSelectorPatterns();
   }
 
