@@ -395,12 +395,3 @@ export class UnifiedRobotBrainCore {
 export function createUnifiedRobotBrain(): UnifiedRobotBrainCore {
   return new UnifiedRobotBrainCore();
 }
-
-// ===== التصديرات الصريحة =====
-export {
-  RobotTask,
-  TaskStep,
-  ExecutionResult,
-  UnifiedRobotBrainCore,
-  createUnifiedRobotBrain,
-};
