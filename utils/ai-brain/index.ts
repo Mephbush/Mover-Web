@@ -16,6 +16,22 @@ export * from './code-intelligence';
 // Database sync is browser-safe (uses Supabase client SDK)
 export * from './database-sync';
 
+// NEW: Advanced Robot Brain Systems (Browser-safe)
+export * from './advanced-robot-logic';
+export * from './lightning-fast-discovery';
+export * from './smart-element-handler';
+export * from './ultra-intelligent-selector-system';
+export * from './high-performance-optimizer';
+export * from './unified-robot-brain-core';
+
+// NEW: Robot Brain unified exports
+export * from './robot-brain-exports';
+
+// NEW: Event-Driven & Adaptive Systems
+export * from './event-driven-robot-brain';
+export * from './adaptive-learning-engine';
+export * from './ultimate-robot-brain';
+
 // NOTE: master-ai is Node.js-only and should not be exported here
 // Import it only from server-side code using:
 // import { getMasterAI } from '@/utils/ai-brain/master-ai'
@@ -25,6 +41,9 @@ import { adaptiveIntelligence } from './adaptive-intelligence';
 import { knowledgeBase } from './knowledge-base';
 import { codeIntelligence } from './code-intelligence';
 import { databaseSync } from './database-sync';
+
+// NEW: Robot Brain Systems
+import { createRobotBrain, RobotTools, RobotHelpers } from './robot-brain-exports';
 
 /**
  * واجهة موحدة للوصول إلى جميع مكونات عقل AI
@@ -37,6 +56,13 @@ export const AIBrain = {
   knowledge: knowledgeBase,
   codeIntel: codeIntelligence,
   database: databaseSync,
+
+  // NEW: Robot Brain Systems
+  robot: {
+    create: createRobotBrain,
+    tools: RobotTools,
+    helpers: RobotHelpers,
+  },
   
   /**
    * تهيئة النظام الكامل
