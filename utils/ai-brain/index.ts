@@ -16,6 +16,17 @@ export * from './code-intelligence';
 // Database sync is browser-safe (uses Supabase client SDK)
 export * from './database-sync';
 
+// NEW: Advanced Robot Brain Systems (Browser-safe)
+export * from './advanced-robot-logic';
+export * from './lightning-fast-discovery';
+export * from './smart-element-handler';
+export * from './ultra-intelligent-selector-system';
+export * from './high-performance-optimizer';
+export * from './unified-robot-brain-core';
+
+// NEW: Robot Brain unified exports
+export * from './robot-brain-exports';
+
 // NOTE: master-ai is Node.js-only and should not be exported here
 // Import it only from server-side code using:
 // import { getMasterAI } from '@/utils/ai-brain/master-ai'
