@@ -201,11 +201,23 @@ class MultiLayerFastFinder {
       // تقييم كل عنصر
       for (const info of interactive) {
         const selector = this.buildSelectorFromInfo(info);
-        
+
         try {
           const element = page.locator(selector).first();
+
+          // Enhanced validation
+          const validation = await EnhancedElementValidator.validate(element, page, {
+            checkVisibility: true,
+            checkSize: true,
+            checkInteractability: true,
+          });
+
+          if (!validation.isValid) {
+            continue;
+          }
+
           const score = await this.scoreElement(element, query);
-          
+
           if (score > 0.6) {
             return {
               found: true,
@@ -215,11 +227,16 @@ class MultiLayerFastFinder {
               timeMs: Date.now() - startTime,
               method: 'comprehensive_search',
               alternatives: [],
+              validation,
             };
           }
-        } catch {}
+        } catch (error: any) {
+          console.debug(`Layer 4 evaluation of ${selector} failed: ${error.message}`);
+        }
       }
-    } catch {}
+    } catch (error: any) {
+      console.warn(`Layer 4 comprehensive search failed: ${error.message}`);
+    }
 
     return null;
   }
