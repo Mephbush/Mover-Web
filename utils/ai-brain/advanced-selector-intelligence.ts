@@ -75,8 +75,9 @@ export class AdvancedSelectorIntelligence {
   /**
    * Initialize selector patterns
    */
-  constructor(learningEngine?: LearningEngine) {
+  constructor(learningEngine?: LearningEngine, adaptiveScorer?: AdaptiveWeightScorer) {
     this.learningEngine = learningEngine || new LearningEngine();
+    this.adaptiveWeightScorer = adaptiveScorer || new AdaptiveWeightScorer();
     this.initializeSelectorPatterns();
   }
 
