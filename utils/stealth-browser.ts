@@ -19,18 +19,29 @@ let Browser: any;
 let BrowserContext: any;
 let Page: any;
 
-try {
-  // Only load in Node.js environments
-  if (typeof window === 'undefined') {
-    const playwright = require('playwright');
-    chromium = playwright.chromium;
-    Browser = playwright.Browser;
-    BrowserContext = playwright.BrowserContext;
-    Page = playwright.Page;
+// Initialize playwright dynamically to avoid build-time errors
+async function initializePlaywright() {
+  try {
+    // Only load in Node.js environments
+    if (typeof window === 'undefined') {
+      try {
+        const playwright = await import('playwright');
+        chromium = (playwright as any).default?.chromium || (playwright as any).chromium;
+        Browser = (playwright as any).default?.Browser || (playwright as any).Browser;
+        BrowserContext = (playwright as any).default?.BrowserContext || (playwright as any).BrowserContext;
+        Page = (playwright as any).default?.Page || (playwright as any).Page;
+      } catch (importError: any) {
+        // Playwright not installed - create stub objects
+        console.warn('Playwright not available:', importError.message);
+        chromium = null;
+        Browser = null;
+        BrowserContext = null;
+        Page = null;
+      }
+    }
+  } catch (error: any) {
+    console.warn('Failed to initialize Playwright:', error.message);
   }
-} catch (error: any) {
-  // Fallback if module not available
-  console.warn('Playwright not available:', error.message);
 }
 
 export interface StealthConfig {
