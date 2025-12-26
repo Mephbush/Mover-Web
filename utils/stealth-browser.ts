@@ -108,6 +108,17 @@ export class StealthBrowser {
   async launch(config: StealthConfig = {}): Promise<void> {
     console.log('🚀 Launching stealth browser...');
 
+    // Initialize playwright if not already done
+    if (!chromium) {
+      await initializePlaywright();
+    }
+
+    if (!chromium) {
+      throw new Error(
+        'Playwright is not available. Please install it with: npm install playwright'
+      );
+    }
+
     const userAgent = (config.userAgent as string | undefined) ||
       (randomChoice(STEALTH_CONFIG.userAgents) as string);
     const viewport = config.viewport || randomChoice(STEALTH_CONFIG.viewports);
