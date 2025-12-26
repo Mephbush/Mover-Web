@@ -452,11 +452,13 @@ export class SmartSelectorOrchestrator {
             // انتظر قليلاً قبل إعادة المحاولة
             await page.waitForTimeout(strategy.delayMs || 500);
 
+            // حول المحدد إلى query object للنظام السريع
+            const query = this.parseSelector(selector);
+
             // جرب البحث عن العنصر باستخدام النظام السريع
             const discoveryResult = await this.discoverySystem.findElementLightning(
               page,
-              selector,
-              { timeout: strategy.timeout || 5000 }
+              query
             );
 
             if (discoveryResult?.found && discoveryResult.element) {
