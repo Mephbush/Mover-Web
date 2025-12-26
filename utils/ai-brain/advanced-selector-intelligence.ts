@@ -69,6 +69,7 @@ export class AdvancedSelectorIntelligence {
   private performanceHistory: Map<string, SelectorReport[]> = new Map();
   private selectorPatterns: Map<string, RegExp> = new Map();
   private learningEngine: LearningEngine;
+  private adaptiveWeightScorer: AdaptiveWeightScorer;
   private errorLogger = getErrorLogger();
 
   /**
