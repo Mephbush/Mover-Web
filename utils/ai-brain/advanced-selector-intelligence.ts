@@ -394,15 +394,27 @@ export class AdvancedSelectorIntelligence {
 
   /**
    * توليد محددات من DOM snapshot حقيقي (أسلوب محسّن)
+   * يشمل: regular DOM, Shadow DOM, iframes
    */
   private generateSelectorsFromDOMSnapshot(
-    snapshot: { elements: any[] },
+    snapshot: {
+      elements: any[];
+      shadowDOMElements?: any[];
+      iframeElements?: any[];
+    },
     context: SelectorContext
   ): SelectorCandidate[] {
     const candidates: SelectorCandidate[] = [];
     const seenSelectors = new Set<string>();
 
-    snapshot.elements.forEach((element) => {
+    // معالجة جميع مصادر العناصر
+    const allElements = [
+      ...(snapshot.elements || []),
+      ...(snapshot.shadowDOMElements || []).map(e => ({...e, domType: 'shadow' as const})),
+      ...(snapshot.iframeElements || []).map(e => ({...e, domType: 'iframe' as const})),
+    ];
+
+    allElements.forEach((element) => {
       // 1. استخدم data-testid إن وجد
       if (element.dataTestId && !seenSelectors.has(`[data-testid="${element.dataTestId}"]`)) {
         const selector = `[data-testid="${element.dataTestId}"]`;
